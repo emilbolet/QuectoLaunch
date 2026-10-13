@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name" translatable="false">QuectoLaunch</string>
     <string name="apps">Apps</string>
+    <string name="apps_personal">Personal</string>
+    <string name="apps_work">Work</string>
     <string name="search_apps">Search apps</string>
     <string name="clear_search">Clear search</string>
     <string name="search_web">Search the web for \"%1$s\"</string>

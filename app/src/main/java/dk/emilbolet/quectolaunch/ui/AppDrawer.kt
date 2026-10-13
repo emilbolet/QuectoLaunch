@@ -37,6 +37,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -45,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,6 +89,9 @@ fun AppDrawer(
     query: String,
     onQueryChange: (String) -> Unit,
     focusSearch: Boolean,
+    /** Which half of the list is shown when the phone has a work profile. */
+    showWork: Boolean,
+    onShowWorkChange: (Boolean) -> Unit,
     layout: DrawerLayout,
     /** Icons per row in the grid layout; the same as the home screen's columns. */
     columns: Int,
@@ -93,7 +100,21 @@ fun AppDrawer(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Search always looks through every app, whichever profile is showing
     val results = remember(query, sections) { searchApps(sections, query) }
+
+    // Without a work profile there is no switch and nothing to filter
+    val hasWork = remember(sections) { sections.any { section -> section.apps.any { it.isWorkProfile } } }
+    val shown = remember(sections, hasWork, showWork) {
+        if (!hasWork) {
+            sections
+        } else {
+            sections.mapNotNull { section ->
+                val apps = section.apps.filter { it.isWorkProfile == showWork }
+                if (apps.isEmpty()) null else section.copy(apps = apps)
+            }
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -120,6 +141,9 @@ fun AppDrawer(
                     }
                 },
             )
+            if (hasWork && query.isBlank()) {
+                ProfileSwitch(showWork, onShowWorkChange)
+            }
             Box(
                 Modifier
                     .weight(1f)
@@ -127,7 +151,10 @@ fun AppDrawer(
                     .nestedScroll(rememberPullDownToClose(onClose))
             ) {
                 if (query.isBlank()) {
-                    AlphabeticalList(sections, layout, columns, repository, dragState)
+                    // Each profile's list starts at the top
+                    key(hasWork && showWork) {
+                        AlphabeticalList(shown, layout, columns, repository, dragState)
+                    }
                 } else {
                     SearchResults(results, query, repository, dragState)
                 }
@@ -297,6 +324,26 @@ private fun SearchField(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(onGo = { onSubmit() }),
     )
+}
+
+/** Personal or work apps; only shown on a phone with a work profile. */
+@Composable
+private fun ProfileSwitch(showWork: Boolean, onChange: (Boolean) -> Unit) {
+    SingleChoiceSegmentedButtonRow(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
+    ) {
+        listOf(false, true).forEachIndexed { index, work ->
+            SegmentedButton(
+                selected = showWork == work,
+                onClick = { onChange(work) },
+                shape = SegmentedButtonDefaults.itemShape(index, 2),
+            ) {
+                Text(stringResource(if (work) R.string.apps_work else R.string.apps_personal))
+            }
+        }
+    }
 }
 
 @Composable

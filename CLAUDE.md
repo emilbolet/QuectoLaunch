@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, and the "Home screens" overview for adding, reordering and removing pages. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, and the Personal/Work switch in the app list. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -51,7 +51,7 @@ The project folder is still called `SimpleLauncher`. The `mobile-mcp` server is 
 app/src/main/java/dk/emilbolet/quectolaunch/
   MainActivity.kt          Edge-to-edge, goes back to plain home on Home press (onNewIntent) and onStop; widget bind/configure results
   GestureService.kt        AccessibilityService used only for lock screen and open notifications
-  LauncherViewModel.kt     App sections, home layout and settings (StateFlow); drawerOpen, query, openFolderId, settingsOpen (Compose state)
+  LauncherViewModel.kt     App sections, home layout and settings (StateFlow); drawerOpen, query, drawerShowsWork, openFolderId, settingsOpen (Compose state)
   data/
     AppInfo.kt             Wraps LauncherActivityInfo; `key` = component + user
     Alphabet.kt            Locale-aware sort (Collator) and A–Z sections
@@ -73,7 +73,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall)
     SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
-    AppDrawer.kt           Search field, sectioned grid or list with sticky headers, results, letter bubble
+    AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
     theme/Theme.kt         Material 3; wallpaper colors on Android 12+ or a scheme built from the accent color
 ```
@@ -182,6 +182,15 @@ Patterns to keep:
 - Grid cells use the same long-press entry point as list rows (`DragSource.FromDrawer`, menu key `drawer:<app key>`).
 - Search results are always a list, in both layouts.
 
+## Personal and work apps (keep this working)
+
+- When any app has `AppInfo.isWorkProfile`, the app list shows a Personal / Work switch under the search field and lists only the chosen half. Without such apps there is no switch and the list is unchanged.
+- The A–Z strip only shows letters the chosen half has. Each half starts at the top when switched to.
+- Search looks through both halves whichever is chosen, and the switch is hidden while searching. Work apps are told apart by the briefcase badge on their icon.
+- The choice (`LauncherViewModel.drawerShowsWork`) lasts while the launcher is running; it starts on Personal and is not saved.
+- `isWorkProfile` is true for every profile other than the phone's own user, so apps from a Private Space or a cloned-apps profile would also land under "Work".
+- To test: `adb shell pm create-user --profileOf 0 --managed TestWork`, then `adb shell am start-user 10`; `adb shell pm remove-user 10` afterwards.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
@@ -194,6 +203,7 @@ Nothing here is started; ask the owner before picking one.
 - Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
 - A free-form accent color picker instead of presets.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
+- Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
 - App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.
 
 ### Out of scope

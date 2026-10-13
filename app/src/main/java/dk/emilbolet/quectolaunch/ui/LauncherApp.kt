@@ -125,6 +125,8 @@ fun LauncherApp(
                 query = viewModel.query,
                 onQueryChange = viewModel::updateQuery,
                 focusSearch = viewModel.drawerSearchFocused,
+                showWork = viewModel.drawerShowsWork,
+                onShowWorkChange = viewModel::showWorkApps,
                 layout = settings.drawerLayout,
                 columns = settings.columns,
                 repository = viewModel.repository,

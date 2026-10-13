@@ -10,7 +10,7 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 ## What it does
 
 - **Home screen:** your wallpaper, a clock and date, a grid of pinned apps, a search bar and a dock.
-- **App list:** swipe up anywhere outside the dock. Every installed app (including work-profile apps), sorted A–Z by your phone's language, as a grid of icons under sticky letter headings. You can switch to a plain list in settings.
+- **App list:** swipe up anywhere outside the dock. Every installed app (including work-profile apps), sorted A–Z by your phone's language, as a grid of icons under sticky letter headings. You can switch to a plain list in settings. On a phone with a work profile, a Personal / Work switch at the top chooses which apps are listed.
 - **A–Z scroller:** touch or drag the letters on the right edge of the app list to jump. A big letter bubble shows where you are and the phone gives a light tick on each new letter.
 - **Search:** tap the search bar on home. Names that start with what you typed come first; Enter opens the top result, and there is always a "search the web" row.
 - **Pinning apps:** hold an app in the list and drag it onto the home screen or the dock. Hold an icon on home to move it.

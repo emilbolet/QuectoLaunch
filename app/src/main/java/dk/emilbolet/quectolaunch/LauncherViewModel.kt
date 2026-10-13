@@ -90,6 +90,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     var query by mutableStateOf("")
         private set
 
+    /** Whether the drawer shows the work profile's apps; kept while the launcher is running. */
+    var drawerShowsWork by mutableStateOf(false)
+        private set
+
     var openFolderId by mutableStateOf<Long?>(null)
         private set
 
@@ -202,6 +206,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun updateQuery(value: String) {
         query = value
+    }
+
+    fun showWorkApps(work: Boolean) {
+        drawerShowsWork = work
     }
 
     fun openFolder(id: Long) {

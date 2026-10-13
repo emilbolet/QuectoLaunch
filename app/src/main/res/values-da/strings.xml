@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="apps">Apps</string>
+    <string name="apps_personal">Personlig</string>
+    <string name="apps_work">Arbejde</string>
     <string name="search_apps">Søg i apps</string>
     <string name="clear_search">Ryd søgning</string>
     <string name="search_web">Søg på nettet efter \"%1$s\"</string>
