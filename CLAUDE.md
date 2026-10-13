@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus four additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, and widgets. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus five additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, and the grid layout for the app list. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -15,7 +15,7 @@ Nothing is in progress. What could come next is under "Ideas and leftovers"; the
 - One feature at a time: build it, check it on the emulator, update this file (a "keep this working" section, the architecture list, the ideas list), then commit.
 - After each feature, tell the owner plainly what was tested and what wasn't, and what behaves differently from what they might expect.
 - When a request is ambiguous, ask before building (the owner once wrote "rows in the app drawer" and meant icons per dock row).
-- Everything has only ever been run on the emulator, in English. It has never been on a real phone.
+- Features are checked on the emulator, in English. Since 2026-10-13 the owner also has a debug build on their own phone (Pixel 9 Pro, Android 17, Danish, with a second user profile); nothing has been tested there systematically.
 
 ### This machine
 
@@ -59,7 +59,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     IconPack.kt            Parses an icon pack's appfilter.xml and resolves its drawables
     HomeDatabase.kt        Room: HomeItem entity, HomeDao (drop/remove/folder/widget placement rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
-    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, icon pack, gestures) and SettingsStore (DataStore)
+    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, app list layout, icon pack, gestures) and SettingsStore (DataStore)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
     SystemControls.kt      Quick toggles (flashlight, intents for the system panels) and the gesture actions
   ui/
@@ -71,8 +71,8 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall)
-    SettingsScreen.kt      Theme, accent color, icon pack, grid size and gestures with the accessibility disclosure (in-tree overlay)
-    AppDrawer.kt           Search field, sectioned list with sticky headers, results, letter bubble
+    SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
+    AppDrawer.kt           Search field, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
     theme/Theme.kt         Material 3; wallpaper colors on Android 12+ or a scheme built from the accent color
 ```
@@ -90,7 +90,7 @@ Patterns to keep:
 
 - Home screen: wallpaper (window shows it via the theme), clock + date, "Set as default home app" button (RoleManager `ROLE_HOME`) until default.
 - Swipe up anywhere on home, or tap "Apps", to open the drawer.
-- Drawer: vertical alphabetical list with sticky letter headers.
+- Drawer: alphabetical, with sticky letter headers. Apps are shown as a grid under each letter (the default) or as a list, one app per line; see "App list layout" below.
 - **A–Z scroller (must-have feature for the owner):** strip on the right edge; touch/drag jumps instantly with `scrollToItem`, big letter bubble in the centre while touching, haptic tick per letter, current section highlighted during normal scrolling. Only letters that have apps are shown. Sorting uses the phone's locale, so in Danish Æ, Ø, Å are separate sections at the end, while accented letters like É fold into E in languages that treat them that way.
 - Search: starts-with matches first, then word-start, then contains. Enter opens the top result; a "search the web" row is always last.
 - Long-press: App info, Uninstall (hidden for system and work-profile apps).
@@ -161,6 +161,14 @@ Patterns to keep:
 - The host listens between `onStart` and `onStop`. Widget rows are removed (and the ID given back) when the widget is removed, its app is uninstalled, or its info is gone at startup.
 - Widgets outside a smaller grid are hidden like apps.
 
+## App list layout (keep this working)
+
+- Settings → "App list layout": Grid (default) or List (`LauncherSettings.drawerLayout`).
+- Grid: each letter keeps its sticky header, with its apps in rows of icons with labels underneath. The number of columns is the home screen's columns setting; there is no separate one. A letter's last row is left-aligned.
+- Both layouts are the same `LazyColumn` in `AlphabeticalList`; in the grid a list item is one row of apps (`AppGridRow`), so the A–Z scroller's `headerIndex` counts rows, not apps.
+- Grid cells use the same long-press entry point as list rows (`DragSource.FromDrawer`, menu key `drawer:<app key>`).
+- Search results are always a list, in both layouts.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
@@ -172,7 +180,8 @@ Nothing here is started; ask the owner before picking one.
 - Brightness slider in the dock (needs `WRITE_SETTINGS`); on/off state for the Wi‑Fi and Bluetooth toggles (needs permissions).
 - Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
 - A free-form accent color picker instead of presets.
-- Never tested on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
+- Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
+- App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.
 
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.

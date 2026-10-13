@@ -122,6 +122,8 @@ fun LauncherApp(
                 query = viewModel.query,
                 onQueryChange = viewModel::updateQuery,
                 focusSearch = viewModel.drawerSearchFocused,
+                layout = settings.drawerLayout,
+                columns = settings.columns,
                 repository = viewModel.repository,
                 dragState = dragState,
                 onClose = viewModel::closeDrawer,

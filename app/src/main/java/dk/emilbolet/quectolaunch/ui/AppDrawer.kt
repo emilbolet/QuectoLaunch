@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,10 @@ import dk.emilbolet.quectolaunch.data.AppInfo
 import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.AppSection
 import dk.emilbolet.quectolaunch.data.DragSource
+import dk.emilbolet.quectolaunch.data.DrawerLayout
 import kotlinx.coroutines.launch
+
+private val GridIconSize = 48.dp
 
 /** The full-screen list of all apps, with search on top and the A–Z strip on the right. */
 @Composable
@@ -81,6 +85,9 @@ fun AppDrawer(
     query: String,
     onQueryChange: (String) -> Unit,
     focusSearch: Boolean,
+    layout: DrawerLayout,
+    /** Icons per row in the grid layout; the same as the home screen's columns. */
+    columns: Int,
     repository: AppRepository,
     dragState: DragState,
     onClose: () -> Unit,
@@ -120,7 +127,7 @@ fun AppDrawer(
                     .nestedScroll(rememberPullDownToClose(onClose))
             ) {
                 if (query.isBlank()) {
-                    AlphabeticalList(sections, repository, dragState)
+                    AlphabeticalList(sections, layout, columns, repository, dragState)
                 } else {
                     SearchResults(results, query, repository, dragState)
                 }
@@ -132,6 +139,8 @@ fun AppDrawer(
 @Composable
 private fun BoxScope.AlphabeticalList(
     sections: List<AppSection>,
+    layout: DrawerLayout,
+    columns: Int,
     repository: AppRepository,
     dragState: DragState,
 ) {
@@ -140,19 +149,23 @@ private fun BoxScope.AlphabeticalList(
 
     val letters = remember(sections) { sections.map { it.letter } }
 
-    // List position of each letter's header (each section = 1 header + its apps)
-    val headerIndex = remember(sections) {
+    // In the grid each list item is a row of apps; in the list it is a single app
+    val perItem = if (layout == DrawerLayout.Grid) columns else 1
+    val rows = remember(sections, perItem) { sections.map { it.apps.chunked(perItem) } }
+
+    // List position of each letter's header (each section = 1 header + its rows)
+    val headerIndex = remember(sections, rows) {
         buildMap {
             var index = 0
-            sections.forEach { section ->
+            sections.forEachIndexed { i, section ->
                 put(section.letter, index)
-                index += 1 + section.apps.size
+                index += 1 + rows[i].size
             }
         }
     }
 
     // The section at the top of the list, highlighted in the strip while scrolling normally
-    val currentLetter by remember(sections) {
+    val currentLetter by remember(sections, headerIndex) {
         derivedStateOf {
             val first = listState.firstVisibleItemIndex
             letters.lastOrNull { (headerIndex[it] ?: 0) <= first }
@@ -167,12 +180,18 @@ private fun BoxScope.AlphabeticalList(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(end = ScrollerWidth, bottom = 16.dp),
     ) {
-        sections.forEach { section ->
+        sections.forEachIndexed { i, section ->
             stickyHeader(key = "header:${section.letter}", contentType = "header") {
                 SectionHeader(section.letter)
             }
-            items(section.apps, key = { it.key }, contentType = { "app" }) { app ->
-                AppRow(app, repository, dragState)
+            if (layout == DrawerLayout.Grid) {
+                items(rows[i], key = { it.first().key }, contentType = { "row" }) { row ->
+                    AppGridRow(row, columns, repository, dragState)
+                }
+            } else {
+                items(section.apps, key = { it.key }, contentType = { "app" }) { app ->
+                    AppRow(app, repository, dragState)
+                }
             }
         }
     }
@@ -318,6 +337,51 @@ private fun AppRow(app: AppInfo, repository: AppRepository, dragState: DragState
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        AppMenu(
+            app = app,
+            repository = repository,
+            expanded = dragState.menuKey == menuKey,
+            onDismiss = dragState::closeMenu,
+        )
+    }
+}
+
+/** One row of the grid layout; a short last row keeps its apps at the left, in column-sized cells. */
+@Composable
+private fun AppGridRow(apps: List<AppInfo>, columns: Int, repository: AppRepository, dragState: DragState) {
+    Row(Modifier.padding(horizontal = 8.dp)) {
+        apps.forEach { app -> AppCell(app, repository, dragState, Modifier.weight(1f)) }
+        repeat(columns - apps.size) { Spacer(Modifier.weight(1f)) }
+    }
+}
+
+@Composable
+private fun AppCell(app: AppInfo, repository: AppRepository, dragState: DragState, modifier: Modifier = Modifier) {
+    val menuKey = "drawer:${app.key}"
+
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .combinedClickable(
+                    onClick = { repository.launch(app) },
+                    onLongClick = { dragState.longPress(DragSource.FromDrawer(app), menuKey) },
+                )
+                .padding(horizontal = 2.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppIcon(app, repository, size = GridIconSize)
+            Text(
+                text = app.label,
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
 

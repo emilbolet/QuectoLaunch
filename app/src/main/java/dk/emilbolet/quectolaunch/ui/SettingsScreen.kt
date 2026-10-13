@@ -48,13 +48,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.DrawerLayout
 import dk.emilbolet.quectolaunch.data.IconPackInfo
 import dk.emilbolet.quectolaunch.data.LauncherSettings
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.ThemeMode
 import dk.emilbolet.quectolaunch.ui.theme.wallpaperColorsAvailable
 
-/** Theme, accent color, icon pack, grid size and gestures. Opened by long-pressing empty space on the home screen. */
+/** Theme, accent color, icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
@@ -200,6 +201,28 @@ fun SettingsScreen(
                 )
                 Text(
                     text = stringResource(R.string.grid_size_note),
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Section(stringResource(R.string.drawer_layout)) {
+                Choices(
+                    options = DrawerLayout.entries,
+                    selected = settings.drawerLayout,
+                    label = {
+                        stringResource(
+                            when (it) {
+                                DrawerLayout.Grid -> R.string.drawer_layout_grid
+                                DrawerLayout.List -> R.string.drawer_layout_list
+                            }
+                        )
+                    },
+                    onSelect = { onChange(settings.copy(drawerLayout = it)) },
+                )
+                Text(
+                    text = stringResource(R.string.drawer_layout_note),
                     modifier = Modifier.padding(top = 12.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

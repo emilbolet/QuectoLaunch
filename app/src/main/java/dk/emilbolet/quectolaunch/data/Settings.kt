@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { System, Light, Dark }
 
+/** How the app list is shown: icons in a grid under each letter, or one app per line. */
+enum class DrawerLayout { Grid, List }
+
 data class LauncherSettings(
     val themeMode: ThemeMode = ThemeMode.System,
     /** Accent color as ARGB; null means the wallpaper's colors (Android 12+) or the default. */
@@ -19,6 +22,7 @@ data class LauncherSettings(
     val rows: Int = 5,
     /** Icons in each of the dock's rows. */
     val dockSlots: Int = 5,
+    val drawerLayout: DrawerLayout = DrawerLayout.Grid,
     /** Package name of the chosen icon pack; null for the apps' own icons. */
     val iconPack: String? = null,
     /** Double-tap to lock and swipe down for notifications. Off unless the user asks for it. */
@@ -53,6 +57,7 @@ class SettingsStore(private val context: Context) {
     private val columnsKey = intPreferencesKey("columns")
     private val rowsKey = intPreferencesKey("rows")
     private val dockSlotsKey = intPreferencesKey("dock_slots")
+    private val drawerLayoutKey = stringPreferencesKey("drawer_layout")
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
 
@@ -67,6 +72,8 @@ class SettingsStore(private val context: Context) {
             rows = (prefs[rowsKey] ?: defaults.rows).coerceIn(LauncherSettings.ROW_CHOICES),
             dockSlots = (prefs[dockSlotsKey] ?: defaults.dockSlots)
                 .coerceIn(LauncherSettings.DOCK_SLOT_CHOICES),
+            drawerLayout = DrawerLayout.entries.firstOrNull { it.name == prefs[drawerLayoutKey] }
+                ?: defaults.drawerLayout,
             iconPack = prefs[iconPackKey],
             gestures = prefs[gesturesKey] ?: defaults.gestures,
         )
@@ -79,6 +86,7 @@ class SettingsStore(private val context: Context) {
             prefs[columnsKey] = settings.columns
             prefs[rowsKey] = settings.rows
             prefs[dockSlotsKey] = settings.dockSlots
+            prefs[drawerLayoutKey] = settings.drawerLayout.name
             prefs[gesturesKey] = settings.gestures
             if (settings.iconPack != null) prefs[iconPackKey] = settings.iconPack else prefs.remove(iconPackKey)
         }

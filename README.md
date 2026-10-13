@@ -5,12 +5,12 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 > [!WARNING]
 > **This project is vibe coded.** All of the code was written by an AI (Claude Code), directed by the owner in plain-language conversation. No human has reviewed the code line by line.
 >
-> It has only been run on an Android emulator, in English, and never on a real phone. There are no automated tests. Treat it as a personal experiment: read the code before you rely on it, and use it at your own risk.
+> It has mostly been run on an Android emulator, in English, with only brief use on one real phone. There are no automated tests. Treat it as a personal experiment: read the code before you rely on it, and use it at your own risk.
 
 ## What it does
 
 - **Home screen:** your wallpaper, a clock and date, a grid of pinned apps, a search bar and a dock.
-- **App list:** swipe up anywhere outside the dock. Every installed app (including work-profile apps), sorted A–Z by your phone's language, with sticky letter headings.
+- **App list:** swipe up anywhere outside the dock. Every installed app (including work-profile apps), sorted A–Z by your phone's language, as a grid of icons under sticky letter headings. You can switch to a plain list in settings.
 - **A–Z scroller:** touch or drag the letters on the right edge of the app list to jump. A big letter bubble shows where you are and the phone gives a light tick on each new letter.
 - **Search:** tap the search bar on home. Names that start with what you typed come first; Enter opens the top result, and there is always a "search the web" row.
 - **Pinning apps:** hold an app in the list and drag it onto the home screen or the dock. Hold an icon on home to move it.
@@ -19,7 +19,7 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 - **Folders:** drop one app on another. Tap the folder to open it, tap its title to rename it.
 - **Long-press an app:** its shortcuts (while QuectoLaunch is your default home app), Remove, App info, Uninstall.
 - **Swipe-up dock:** swipe up on the dock for a second row of apps and quick toggles (flashlight, Wi‑Fi, Bluetooth, sound, settings).
-- **Settings:** hold an empty spot on the home screen and choose Launcher settings. Light/dark theme, accent color, icon pack, grid size, icons per dock row, and gestures.
+- **Settings:** hold an empty spot on the home screen and choose Launcher settings. Light/dark theme, accent color, icon pack, grid size, icons per dock row, app list layout, and gestures.
 - **Gestures (optional, off by default):** double-tap an empty spot to lock the phone, swipe down for notifications. These need Android's accessibility access, which the app explains before asking.
 
 ## Running it

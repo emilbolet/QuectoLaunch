@@ -30,6 +30,10 @@
     <string name="grid_rows">Home screen rows</string>
     <string name="dock_slots">Icons per dock row</string>
     <string name="grid_size_note">Apps that don\'t fit in a smaller grid or dock are hidden, not removed. They come back when you make it bigger again.</string>
+    <string name="drawer_layout">App list layout</string>
+    <string name="drawer_layout_grid">Grid</string>
+    <string name="drawer_layout_list">List</string>
+    <string name="drawer_layout_note">The grid has as many columns as the home screen.</string>
     <string name="icon_pack">Icon pack</string>
     <string name="icon_pack_default">Default icons</string>
     <string name="icon_pack_none">No icon packs installed. Install one from the Play Store and it will show up here.</string>
