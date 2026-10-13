@@ -100,6 +100,9 @@ import kotlinx.coroutines.launch
 
 private val DefaultIconSize = 52.dp
 
+/** Leaves room for a line of text in a dock row. */
+private val DockIconSizeWithLabel = 44.dp
+
 /** How long a dragged icon has to be held at the screen edge before the page turns. */
 private const val PAGE_TURN_HOLD_MS = 600L
 
@@ -123,6 +126,7 @@ fun HomeScreen(
     columns: Int,
     rows: Int,
     dockSlots: Int,
+    dockLabels: Boolean,
     pageRequest: PageRequest,
     gesturesEnabled: Boolean,
     repository: AppRepository,
@@ -153,7 +157,12 @@ fun HomeScreen(
     }
 
     @Composable
-    fun Cell(entry: HomeEntry?, showLabel: Boolean, iconSize: Dp = DefaultIconSize) {
+    fun Cell(
+        entry: HomeEntry?,
+        showLabel: Boolean,
+        iconSize: Dp = DefaultIconSize,
+        onWallpaper: Boolean = true,
+    ) {
         // Widgets cover several cells and are drawn by WidgetLayer instead
         if (entry == null || entry is WidgetEntry) return
         EntryCell(
@@ -170,6 +179,7 @@ fun HomeScreen(
             onRemove = { onRemove(entry) },
             iconSize = iconSize,
             showLabel = showLabel,
+            onWallpaper = onWallpaper,
         )
     }
 
@@ -223,6 +233,7 @@ fun HomeScreen(
 
     // Read through derivedStateOf so the screen isn't recomposed on every frame of the swipe
     val dockOpen by remember(dockState) { derivedStateOf { dockState.openFraction > 0f } }
+    val dockSolid by remember(dockState) { derivedStateOf { dockState.openFraction > 0.5f } }
 
     BoxWithConstraints(
         Modifier
@@ -259,8 +270,11 @@ fun HomeScreen(
             }
     ) {
       // Shrink the dock's icons when many of them share a row (the dock has 8 dp side margins)
-      val dockIconSize = minOf(DefaultIconSize, (maxWidth - 16.dp) / dockSlots - 14.dp)
-          .coerceAtLeast(32.dp)
+      // and when the row also has to fit their names
+      val dockIconSize = minOf(
+          if (dockLabels) DockIconSizeWithLabel else DefaultIconSize,
+          (maxWidth - 16.dp) / dockSlots - 14.dp,
+      ).coerceAtLeast(32.dp)
 
       Column(
           // Leaves room for the collapsed dock, which is drawn on top below
@@ -369,7 +383,8 @@ fun HomeScreen(
                 .systemBarsPadding()
                 .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         ) { entry ->
-            Cell(entry, showLabel = false, iconSize = dockIconSize)
+            // The open dock is solid, so its labels take the theme's text color
+            Cell(entry, showLabel = dockLabels, iconSize = dockIconSize, onWallpaper = !dockSolid)
         }
 
         // Menu for a long-press on empty space, shown where the finger was

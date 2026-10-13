@@ -199,6 +199,11 @@ fun SettingsScreen(
                     label = { it.toString() },
                     onSelect = { onChange(settings.copy(dockSlots = it)) },
                 )
+                SwitchRow(
+                    label = stringResource(R.string.dock_labels),
+                    checked = settings.dockLabels,
+                    onCheckedChange = { onChange(settings.copy(dockLabels = it)) },
+                )
                 Text(
                     text = stringResource(R.string.grid_size_note),
                     modifier = Modifier.padding(top = 12.dp),
@@ -340,6 +345,24 @@ private fun Section(title: String, content: @Composable () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
         )
         content()
+    }
+}
+
+@Composable
+private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

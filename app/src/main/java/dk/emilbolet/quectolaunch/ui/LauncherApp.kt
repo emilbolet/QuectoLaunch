@@ -88,6 +88,7 @@ fun LauncherApp(
             columns = settings.columns,
             rows = settings.rows,
             dockSlots = settings.dockSlots,
+            dockLabels = settings.dockLabels,
             pageRequest = viewModel.pageRequest,
             gesturesEnabled = settings.gestures,
             repository = viewModel.repository,

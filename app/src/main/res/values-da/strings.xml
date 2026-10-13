@@ -25,6 +25,7 @@
     <string name="grid_columns">Kolonner på startskærmen</string>
     <string name="grid_rows">Rækker på startskærmen</string>
     <string name="dock_slots">Ikoner pr. række i docken</string>
+    <string name="dock_labels">Vis appnavne i docken</string>
     <string name="grid_size_note">Apps, der ikke er plads til i et mindre gitter eller en mindre dock, skjules, men fjernes ikke. De kommer tilbage, når du gør det større igen.</string>
     <string name="drawer_layout">Layout for applisten</string>
     <string name="drawer_layout_grid">Gitter</string>

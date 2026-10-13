@@ -26,6 +26,7 @@
     <string name="grid_columns">Home screen columns</string>
     <string name="grid_rows">Home screen rows</string>
     <string name="dock_slots">Icons per dock row</string>
+    <string name="dock_labels">Show app names in the dock</string>
     <string name="grid_size_note">Apps that don\'t fit in a smaller grid or dock are hidden, not removed. They come back when you make it bigger again.</string>
     <string name="drawer_layout">App list layout</string>
     <string name="drawer_layout_grid">Grid</string>

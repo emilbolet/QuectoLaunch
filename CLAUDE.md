@@ -59,7 +59,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     IconPack.kt            Parses an icon pack's appfilter.xml and resolves its drawables
     HomeDatabase.kt        Room: HomeItem and HomeMeta (page count) entities, HomeDao (drop/remove/folder/widget/page rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
-    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, app list layout, icon pack, gestures) and SettingsStore (DataStore)
+    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size and labels, app list layout, icon pack, gestures) and SettingsStore (DataStore)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
     SystemControls.kt      The gesture actions and the way to the accessibility settings
   ui/
@@ -122,6 +122,7 @@ Patterns to keep:
 - Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
 - Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
 - Grid size: 4–6 columns, 4–9 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
+- "Show app names in the dock" (`dockLabels`, off by default) puts a one-line label under each dock icon, in both rows. The icons are then at most 44 dp so icon and label fit the 80 dp row. The labels are white over the wallpaper while the dock is closed and take the theme's text color once it is more than half open, because the open dock is solid.
 - Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
 - Room is at schema version 6 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns; 4→5 added the `home_meta` table with the page count; 5→6 added `home_items.builtIn` and `home_meta.layoutVersion`). Add a migration for any further schema change.
 

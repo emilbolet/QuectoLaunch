@@ -25,6 +25,8 @@ data class LauncherSettings(
     val rows: Int = 7,
     /** Icons in each of the dock's rows. */
     val dockSlots: Int = 5,
+    /** App names under the dock's icons. */
+    val dockLabels: Boolean = false,
     val drawerLayout: DrawerLayout = DrawerLayout.Grid,
     /** Package name of the chosen icon pack; null for the apps' own icons. */
     val iconPack: String? = null,
@@ -63,6 +65,7 @@ class SettingsStore(private val context: Context) {
     private val columnsKey = intPreferencesKey("columns")
     private val rowsKey = intPreferencesKey("rows")
     private val dockSlotsKey = intPreferencesKey("dock_slots")
+    private val dockLabelsKey = booleanPreferencesKey("dock_labels")
     private val drawerLayoutKey = stringPreferencesKey("drawer_layout")
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
@@ -98,6 +101,7 @@ class SettingsStore(private val context: Context) {
             rows = (prefs[rowsKey] ?: defaults.rows).coerceIn(LauncherSettings.ROW_CHOICES),
             dockSlots = (prefs[dockSlotsKey] ?: defaults.dockSlots)
                 .coerceIn(LauncherSettings.DOCK_SLOT_CHOICES),
+            dockLabels = prefs[dockLabelsKey] ?: defaults.dockLabels,
             drawerLayout = DrawerLayout.entries.firstOrNull { it.name == prefs[drawerLayoutKey] }
                 ?: defaults.drawerLayout,
             iconPack = prefs[iconPackKey],
@@ -112,6 +116,7 @@ class SettingsStore(private val context: Context) {
             prefs[columnsKey] = settings.columns
             prefs[rowsKey] = settings.rows
             prefs[dockSlotsKey] = settings.dockSlots
+            prefs[dockLabelsKey] = settings.dockLabels
             prefs[drawerLayoutKey] = settings.drawerLayout.name
             prefs[gesturesKey] = settings.gestures
             if (settings.iconPack != null) prefs[iconPackKey] = settings.iconPack else prefs.remove(iconPackKey)
