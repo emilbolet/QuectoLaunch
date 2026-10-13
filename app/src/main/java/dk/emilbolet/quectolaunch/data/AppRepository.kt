@@ -200,12 +200,23 @@ class AppRepository(private val context: Context) {
                 .take(MAX_SHORTCUTS)
                 .mapNotNull { info ->
                     val label = (info.shortLabel ?: info.longLabel)?.toString()
-                    if (label.isNullOrBlank()) null else AppShortcut(label, info)
+                    if (label.isNullOrBlank()) null else AppShortcut(label, info, shortcutIcon(info))
                 }
         } catch (e: Exception) {
             // Lost the default-launcher role in the meantime, or the profile is locked
             emptyList()
         }
+    }
+
+    /** A shortcut's own icon for the long-press menu, or null if it has none or can't be read. */
+    private fun shortcutIcon(info: ShortcutInfo): ImageBitmap? = try {
+        val density = context.resources.displayMetrics
+        val size = (SHORTCUT_ICON_DP * density.density).toInt()
+        launcherApps.getShortcutIconDrawable(info, density.densityDpi)
+            ?.toBitmap(size, size)
+            ?.asImageBitmap()
+    } catch (e: Exception) {
+        null
     }
 
     fun startShortcut(shortcut: AppShortcut) {
@@ -247,8 +258,11 @@ data class AppChange(
 )
 
 /** One entry in an app's long-press shortcut list. */
-class AppShortcut(val label: String, val info: ShortcutInfo)
+class AppShortcut(val label: String, val info: ShortcutInfo, val icon: ImageBitmap?)
 
 private const val MAX_SHORTCUTS = 4
+
+/** Size shortcut icons are decoded at; the menu draws them at 24 dp. */
+private const val SHORTCUT_ICON_DP = 32
 
 private val ICON_PACK_ACTIONS = listOf("org.adw.launcher.THEMES", "com.novalauncher.THEME")

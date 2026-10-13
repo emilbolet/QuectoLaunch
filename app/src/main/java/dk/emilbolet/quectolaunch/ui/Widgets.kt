@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.systemGestureExclusion
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -146,6 +150,13 @@ private fun WidgetCell(
         ) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.resize)) },
+                leadingIcon = {
+                    Icon(
+                        painterResource(R.drawable.ic_resize),
+                        contentDescription = null,
+                        modifier = Modifier.size(MenuIconSize),
+                    )
+                },
                 onClick = {
                     dragState.closeMenu()
                     onStartResize()
@@ -153,6 +164,7 @@ private fun WidgetCell(
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.remove)) },
+                leadingIcon = { MenuIcon(Icons.Outlined.Close) },
                 onClick = {
                     dragState.closeMenu()
                     onRemove()

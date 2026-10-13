@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, and the Personal/Work switch in the app list. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, and icons in the long-press menus. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -71,7 +71,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows and the quick toggles
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
-    AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall)
+    AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall), MenuIcon
     SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
     AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
@@ -105,7 +105,7 @@ Patterns to keep:
 - Drop rules (`HomeDao.drop`): empty cell → place; app on app → new folder; app on folder → joins it; folder on something → swap. Dropping outside the grid and dock cancels.
 - Folders: tap to open a popup, tap the title to rename, drag apps out. A folder left with one app turns back into that app.
 - Uninstalled apps are removed from the layout (on the removal callback, and at startup for apps removed while we weren't running). Disabled/unavailable apps are only hidden.
-- Not done yet: reordering inside a folder, shortcut icons in the menu.
+- Not done yet: reordering inside a folder.
 
 ## What step 3 does (keep this working)
 
@@ -191,11 +191,17 @@ Patterns to keep:
 - `isWorkProfile` is true for every profile other than the phone's own user, so apps from a Private Space or a cloned-apps profile would also land under "Work".
 - To test: `adb shell pm create-user --profileOf 0 --managed TestWork`, then `adb shell am start-user 10`; `adb shell pm remove-user 10` afterwards.
 
+## Menu icons (keep this working)
+
+- Every item in a long-press menu has an icon in front of its label: the app menu, the folder menu, the widget menu and the empty-space menu. A new menu item should get one too.
+- Fixed actions use `MenuIcon` with an outlined Material icon from `material-icons-core` (Close for Remove, Info, Delete for Uninstall, Home, Settings). Icons the core set lacks are vector drawables (`ic_widgets`, `ic_resize`); the extended icon library is deliberately not a dependency.
+- App shortcuts show their own icon in its own colors (`AppShortcut.icon`, loaded with `getShortcutIconDrawable` together with the shortcut list, off the main thread). A shortcut without an icon gets an empty gap so the labels stay in line.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
 
-- Reordering apps inside a folder; icons for app shortcuts in the long-press menu.
+- Reordering apps inside a folder.
 - Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions, editable quick toggles.
 - A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.

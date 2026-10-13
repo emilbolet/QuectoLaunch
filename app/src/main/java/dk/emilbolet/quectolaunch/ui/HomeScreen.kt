@@ -41,6 +41,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -74,6 +77,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,21 +92,21 @@ import androidx.lifecycle.repeatOnLifecycle
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppRepository
+import dk.emilbolet.quectolaunch.data.CELL_STRIDE
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.FolderEntry
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
 import dk.emilbolet.quectolaunch.data.HomeLayout
-import dk.emilbolet.quectolaunch.data.CELL_STRIDE
 import dk.emilbolet.quectolaunch.data.PageRequest
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.WidgetEntry
 import dk.emilbolet.quectolaunch.data.WidgetHost
 import dk.emilbolet.quectolaunch.data.cellPosition
+import java.util.Date
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Date
 
 private val DefaultIconSize = 52.dp
 
@@ -390,6 +394,13 @@ fun HomeScreen(
             DropdownMenu(expanded = homeMenuAt != null, onDismissRequest = { homeMenuAt = null }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.widgets)) },
+                    leadingIcon = {
+                        Icon(
+                            painterResource(R.drawable.ic_widgets),
+                            contentDescription = null,
+                            modifier = Modifier.size(MenuIconSize),
+                        )
+                    },
                     onClick = {
                         homeMenuAt = null
                         onOpenWidgets()
@@ -397,6 +408,7 @@ fun HomeScreen(
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.home_screens)) },
+                    leadingIcon = { MenuIcon(Icons.Outlined.Home) },
                     onClick = {
                         homeMenuAt = null
                         onOpenPages()
@@ -404,6 +416,7 @@ fun HomeScreen(
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.launcher_settings)) },
+                    leadingIcon = { MenuIcon(Icons.Outlined.Settings) },
                     onClick = {
                         homeMenuAt = null
                         onOpenSettings()
@@ -534,6 +547,7 @@ fun EntryCell(
             is FolderEntry -> DropdownMenu(expanded = menuOpen, onDismissRequest = dragState::closeMenu) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.remove)) },
+                    leadingIcon = { MenuIcon(Icons.Outlined.Close) },
                     onClick = {
                         dragState.closeMenu()
                         onRemove()

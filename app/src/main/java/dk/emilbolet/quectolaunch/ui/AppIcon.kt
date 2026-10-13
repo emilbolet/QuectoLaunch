@@ -8,9 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,8 +23,10 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppInfo
@@ -74,6 +81,14 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
     }
 }
 
+val MenuIconSize = 24.dp
+
+/** The icon in front of a long-press menu item; the label next to it says what it does. */
+@Composable
+fun MenuIcon(icon: ImageVector) {
+    Icon(icon, contentDescription = null, modifier = Modifier.size(MenuIconSize))
+}
+
 /**
  * Long-press menu for an app: its shortcuts (only while we're the default launcher),
  * then Remove (for apps placed on the home screen), App info and Uninstall.
@@ -93,6 +108,15 @@ fun AppMenu(
         shortcuts.forEach { shortcut ->
             DropdownMenuItem(
                 text = { Text(shortcut.label) },
+                // The shortcut's own icon, in its own colors; the gap keeps the labels in line
+                leadingIcon = {
+                    val icon = shortcut.icon
+                    if (icon != null) {
+                        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(MenuIconSize))
+                    } else {
+                        Spacer(Modifier.size(MenuIconSize))
+                    }
+                },
                 onClick = {
                     onDismiss()
                     repository.startShortcut(shortcut)
@@ -104,6 +128,7 @@ fun AppMenu(
         if (onRemove != null) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.remove)) },
+                leadingIcon = { MenuIcon(Icons.Outlined.Close) },
                 onClick = {
                     onDismiss()
                     onRemove()
@@ -112,6 +137,7 @@ fun AppMenu(
         }
         DropdownMenuItem(
             text = { Text(stringResource(R.string.app_info)) },
+            leadingIcon = { MenuIcon(Icons.Outlined.Info) },
             onClick = {
                 onDismiss()
                 repository.openAppInfo(app)
@@ -120,6 +146,7 @@ fun AppMenu(
         if (!app.isSystemApp && !app.isWorkProfile) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.uninstall)) },
+                leadingIcon = { MenuIcon(Icons.Outlined.Delete) },
                 onClick = {
                     onDismiss()
                     repository.uninstall(app)
