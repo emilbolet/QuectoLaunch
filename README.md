@@ -32,6 +32,37 @@ To go back to your normal launcher, change the same setting back.
 
 From a terminal: `./gradlew installDebug` (see `CLAUDE.md` for the Java and SDK paths on this machine).
 
+## Releases
+
+A GitHub Actions workflow (`.github/workflows/build.yml`) builds and lints every push. Pushing a tag also publishes a signed APK as a GitHub release.
+
+To make a release:
+
+1. Set `versionName` and `versionCode` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (it becomes the release notes).
+2. Commit, then tag the commit with `v` plus the version name and push the tag: `git tag v0.1 && git push origin v0.1`.
+
+The workflow refuses to release if the tag and `versionName` differ.
+
+### Signing key (one-time setup)
+
+Android only installs an update over an existing app if both are signed with the same key, so the key must be created once and kept. Create it outside the repository:
+
+```
+keytool -genkeypair -keystore quectolaunch-release.jks -alias release \
+    -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Then add four repository secrets under Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+|---|---|
+| `SIGNING_KEYSTORE_BASE64` | the output of `base64 -w0 quectolaunch-release.jks` |
+| `SIGNING_KEYSTORE_PASSWORD` | the keystore password |
+| `SIGNING_KEY_ALIAS` | `release` |
+| `SIGNING_KEY_PASSWORD` | the key password (the same as the keystore password unless you chose another) |
+
+Back up the keystore file and its password somewhere safe. If they are lost, no update can be installed over an earlier release; users would have to uninstall first and lose their layout.
+
 ## For developers
 
 `CLAUDE.md` describes the architecture, the patterns to keep, and what each feature is expected to do. It is also the instruction file the AI works from, so it shows how the project was built.
