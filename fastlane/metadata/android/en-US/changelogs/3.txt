@@ -1,0 +1,9 @@
+Beta: for testing, expect rough edges.
+
+New since beta 1:
+- Transparency: separate sliders in Launcher settings for the app list, the dock, folders, long-press menus and the search bar
+
+From beta 1:
+- Accent color: pick any color with the Color and Vividness sliders
+- Icon packs: styling for apps a pack doesn't cover, calendar and clock icons that follow the date and time
+- "Change icon" in an app's long-press menu

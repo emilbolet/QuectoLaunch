@@ -1,0 +1,9 @@
+Beta: til afprøvning, forvent småfejl.
+
+Nyt siden beta 1:
+- Gennemsigtighed: separate skydere i launcherindstillingerne for applisten, docken, mapper, menuer ved langt tryk og søgefeltet
+
+Fra beta 1:
+- Accentfarve: vælg en hvilken som helst farve med skyderne Farve og Farvestyrke
+- Ikonpakker: tilpasning af apps, som pakken ikke dækker, samt kalender- og urikoner, der følger dato og klokkeslæt
+- "Skift ikon" i menuen ved langt tryk på en app
