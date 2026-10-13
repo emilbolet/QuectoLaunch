@@ -36,6 +36,11 @@
     <string name="drawer_layout_list">Liste</string>
     <string name="drawer_layout_note">Gitteret har lige så mange kolonner som startskærmen.</string>
     <string name="icon_pack">Ikonpakke</string>
+    <string name="change_icon">Skift ikon</string>
+    <string name="change_icon_title">Ikon til %1$s</string>
+    <string name="change_icon_reset">Brug det normale ikon</string>
+    <string name="change_icon_search">Søg i ikoner</string>
+    <string name="change_icon_none">Denne ikonpakke har ingen ikoner at vælge imellem.</string>
     <string name="icon_pack_default">Standardikoner</string>
     <string name="icon_pack_none">Der er ikke installeret nogen ikonpakker. Installer en, så vises den her.</string>
     <string name="gestures">Bevægelser</string>

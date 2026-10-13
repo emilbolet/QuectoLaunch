@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. After release 0.1 (not yet released): a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -56,7 +56,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     AppInfo.kt             Wraps LauncherActivityInfo; `key` = component + user
     Alphabet.kt            Locale-aware sort (Collator) and A–Z sections
     AppRepository.kt       LauncherApps: load apps, change callback, icons (LruCache, icon pack), shortcuts, launch, uninstall, web search
-    IconPack.kt            Parses an icon pack's appfilter.xml and resolves its drawables
+    IconPack.kt            Parses an icon pack's appfilter.xml: icons per app, calendar and clock icons, styling for apps it doesn't cover
     HomeDatabase.kt        Room: HomeItem and HomeMeta (page count) entities, HomeDao (drop/remove/folder/widget/page rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
     Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size and labels, app list layout, icon pack, gestures) and SettingsStore (DataStore)
@@ -72,7 +72,8 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
-    AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall), MenuIcon
+    AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, Change icon, App info, Uninstall), MenuIcon
+    IconPicker.kt          Choosing one app's icon by hand from an icon pack (in-tree overlay)
     SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
     AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
@@ -135,8 +136,13 @@ Patterns to keep:
 - `AppRepository.setIconPack` swaps the pack and clears the icon cache. `iconVersion` (Compose state) goes up on every cache clear and is a key in `AppIcon`, so icons on screen reload.
 - The pack is loaded before the first settings value is published (`LauncherViewModel.settings`), so startup never shows the default icons first.
 - If the chosen pack is updated it is re-read; if it is uninstalled the launcher falls back to default icons.
-- Not done: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, calendar/clock dynamic icons, per-app icon choice.
-- To test without a real pack: build a tiny app with an activity filtering `org.adw.launcher.THEMES`, a `res/xml/appfilter.xml` and a couple of drawables.
+- Apps the pack doesn't cover are dressed up to match if the pack says how (`IconPack.wrap`): the app's own icon is shrunk by `<scale factor>`, the opaque parts of `<iconmask>` are cut away from it (`DST_OUT`, the convention other launchers use), it is drawn on one of the `<iconback>` images (picked by the component's hash, so always the same one for an app) and `<iconupon>` goes on top. A pack with none of these leaves such apps alone.
+- Calendar icons: `<calendar component=".." prefix="calendar_"/>` uses the drawable `prefix` + day of the month. Clock icons: `<dynamic-clock drawable=".." hourLayerIndex=".." minuteLayerIndex=".." secondLayerIndex=".." defaultHour=".." defaultMinute=".."/>` names a layer drawable whose hand layers turn with their level; the levels are set the way Android's own launcher does it. The second hand is hidden, because icons are bitmaps redrawn once a minute.
+- `AppRepository.refreshTimeIcons()` runs once a minute while the launcher is started (`LauncherApp`) and drops the cached calendar icons when the day has changed and the clock icons every time, then bumps `iconVersion`.
+- An icon for one app, picked by hand: the app menu has "Change icon" whenever an icon pack is installed (`AppRepository.hasIconPacks`). `IconPicker` shows every icon of a pack (`drawable.xml` plus the names in `appfilter.xml`), with the ones named like the app first, a search field, chips to switch pack when several are installed, and "Use the normal icon". The choice is saved per `AppInfo.key` in DataStore as `icon_choice:<key>` = `pack/drawable` (`SettingsStore.iconChoices`), applies everywhere the app is shown, wins over the selected pack, and works with no pack selected. If its pack is uninstalled the app gets its normal icon; the saved choice is kept.
+- The menu reaches the picker through `LocalChangeIcon` (a CompositionLocal provided in `LauncherApp`) instead of a callback passed through every screen. It is the only CompositionLocal of ours.
+- Not done: a pack's own icon categories in the picker, cleaning up saved choices for uninstalled apps, picking an image file as icon.
+- To test without a real pack: build a tiny app with an activity filtering `org.adw.launcher.THEMES` (`android:hasCode="false"` and `android.app.Activity` as the activity class is enough), a `res/xml/appfilter.xml`, a `res/xml/drawable.xml` and a few drawables. For a dynamic clock: a `layer-list` of `rotate` drawables with `toDegrees` 5000 (hour) and 60000 (minute).
 
 ## What step 6 does (keep this working)
 
@@ -218,11 +224,10 @@ Patterns to keep:
 Nothing here is started; ask the owner before picking one.
 
 - Reordering apps inside a folder.
-- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
+- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
 - A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
 - Clock widget: opening the clock app on tap, a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
-- Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
 - Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
 - App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.

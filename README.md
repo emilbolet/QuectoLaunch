@@ -17,7 +17,8 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 - **Home screens:** swipe sideways between them. Hold an empty spot and choose Home screens to add, remove or reorder them (hold and drag a preview to move it). There is always at least one. You can also make a new one by dragging an icon to the right edge of the screen and holding it there.
 - **Widgets:** hold an empty spot on the home screen and choose Widgets. Hold a widget to resize, move or remove it.
 - **Folders:** drop one app on another. Tap the folder to open it, tap its title to rename it.
-- **Long-press an app:** its shortcuts (while QuectoLaunch is your default home app), Remove, App info, Uninstall.
+- **Long-press an app:** its shortcuts (while QuectoLaunch is your default home app), Remove, Change icon, App info, Uninstall.
+- **Icon packs:** choose one in settings. Apps the pack doesn't cover are styled to match where the pack allows it, calendar and clock icons show the date and time where the pack has them, and "Change icon" lets you pick any icon from a pack for a single app.
 - **Swipe-up dock:** swipe up on the dock for a second row of apps.
 - **Settings:** hold an empty spot on the home screen and choose Launcher settings. Light/dark theme, accent color (wallpaper colors, presets or your own), icon pack, grid size, icons per dock row, app names in the dock, app list layout, and gestures.
 - **Gestures (optional, off by default):** double-tap an empty spot to lock the phone, swipe down for notifications. These need Android's accessibility access, which the app explains before asking.

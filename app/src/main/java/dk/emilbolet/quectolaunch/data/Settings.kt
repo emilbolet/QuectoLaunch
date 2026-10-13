@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -51,6 +52,8 @@ data class LauncherSettings(
         )
     }
 }
+
+private const val ICON_CHOICE_PREFIX = "icon_choice:"
 
 /** The grid's rows before the clock and search bar moved onto it. */
 private const val OLD_DEFAULT_ROWS = 5
@@ -107,6 +110,29 @@ class SettingsStore(private val context: Context) {
             iconPack = prefs[iconPackKey],
             gestures = prefs[gesturesKey] ?: defaults.gestures,
         )
+    }
+
+    /**
+     * Icons picked by hand, by [AppInfo.key]. Kept beside the settings, one entry per app,
+     * as "pack/drawable".
+     */
+    val iconChoices: Flow<Map<String, IconChoice>> = context.dataStore.data.map { prefs ->
+        buildMap {
+            prefs.asMap().forEach { (key, value) ->
+                if (!key.name.startsWith(ICON_CHOICE_PREFIX) || value !is String) return@forEach
+                val pack = value.substringBefore('/')
+                val drawable = value.substringAfter('/', "")
+                if (drawable.isNotEmpty()) put(key.name.removePrefix(ICON_CHOICE_PREFIX), IconChoice(pack, drawable))
+            }
+        }
+    }.distinctUntilChanged()
+
+    /** Null goes back to the icon the app would have anyway. */
+    suspend fun setIconChoice(appKey: String, choice: IconChoice?) {
+        val key = stringPreferencesKey(ICON_CHOICE_PREFIX + appKey)
+        context.dataStore.edit { prefs ->
+            if (choice != null) prefs[key] = "${choice.pack}/${choice.drawable}" else prefs.remove(key)
+        }
     }
 
     suspend fun save(settings: LauncherSettings) {

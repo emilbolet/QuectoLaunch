@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -20,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -83,6 +85,12 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
 
 val MenuIconSize = 24.dp
 
+/**
+ * Opens the icon picker for an app. Provided at the root, so the app menu can offer
+ * "Change icon" wherever it is shown without every screen passing the callback along.
+ */
+val LocalChangeIcon = staticCompositionLocalOf<(AppInfo) -> Unit> { {} }
+
 /** The icon in front of a long-press menu item; the label next to it says what it does. */
 @Composable
 fun MenuIcon(icon: ImageVector) {
@@ -91,7 +99,8 @@ fun MenuIcon(icon: ImageVector) {
 
 /**
  * Long-press menu for an app: its shortcuts (only while we're the default launcher),
- * then Remove (for apps placed on the home screen), App info and Uninstall.
+ * then Remove (for apps placed on the home screen), Change icon (if an icon pack is
+ * installed), App info and Uninstall.
  */
 @Composable
 fun AppMenu(
@@ -132,6 +141,17 @@ fun AppMenu(
                 onClick = {
                     onDismiss()
                     onRemove()
+                },
+            )
+        }
+        if (repository.hasIconPacks) {
+            val changeIcon = LocalChangeIcon.current
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.change_icon)) },
+                leadingIcon = { MenuIcon(Icons.Outlined.Edit) },
+                onClick = {
+                    onDismiss()
+                    changeIcon(app)
                 },
             )
         }

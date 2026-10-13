@@ -1,12 +1,14 @@
 package dk.emilbolet.quectolaunch.data
 
 import android.app.SearchManager
+import android.content.ComponentName
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.content.pm.ShortcutInfo
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -17,14 +19,17 @@ import android.util.LruCache
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.drawable.toDrawable
 import dk.emilbolet.quectolaunch.R
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.Calendar
 
 /** Everything that talks to the system about installed apps. */
 class AppRepository(private val context: Context) {
@@ -37,6 +42,21 @@ class AppRepository(private val context: Context) {
 
     @Volatile
     private var iconPack: IconPack? = null
+
+    /** [AppInfo.key] -> the icon the user chose for that app by hand; see [IconChoice]. */
+    @Volatile
+    private var iconChoices: Map<String, IconChoice> = emptyMap()
+
+    // The packs those hand-picked icons come from, and the ones browsed in the icon picker
+    private val packResources = HashMap<String, PackResources?>()
+    private val pickerIcons = LruCache<String, ImageBitmap>(300)
+
+    /** The day of the month the calendar icons were last drawn for. */
+    private var calendarDay = -1
+
+    /** Whether any icon pack is installed, so menus know whether to offer "Change icon". */
+    var hasIconPacks by mutableStateOf(false)
+        private set
 
     /** Goes up whenever the icons change (new pack, app updated); icons on screen reload on it. */
     var iconVersion by mutableIntStateOf(0)
@@ -115,13 +135,19 @@ class AppRepository(private val context: Context) {
     fun cachedIcon(app: AppInfo): ImageBitmap? = iconCache.get(app.key)
 
     /**
-     * Loads an icon: from the icon pack if it has one for this app, otherwise the app's own.
-     * Adds the work-profile badge if needed. Call off the main thread.
+     * Loads an icon. In order: the one the user picked for this app by hand, the icon pack's
+     * icon for it, the app's own icon dressed up by the pack (background, shape, overlay),
+     * and finally the app's own icon as it is. Adds the work-profile badge if needed.
+     * Call off the main thread.
      */
     fun loadIcon(app: AppInfo): ImageBitmap {
         iconCache.get(app.key)?.let { return it }
         val version = iconVersion
-        val themed = iconPack?.iconFor(app.component)
+        val pack = iconPack
+        val themed: Drawable? = iconChoices[app.key]?.let { resourcesOf(it.pack)?.drawable(it.drawable) }
+            ?: pack?.iconFor(app.component)
+            ?: pack?.wrap(app.info.getIcon(0), iconSizePx, seed = app.component.hashCode())
+                ?.toDrawable(context.resources)
         val drawable = when {
             themed == null -> app.info.getBadgedIcon(0)
             app.isWorkProfile -> context.packageManager.getUserBadgedIcon(themed, app.user)
@@ -139,6 +165,28 @@ class AppRepository(private val context: Context) {
         iconVersion++
     }
 
+    /**
+     * Calendar and clock icons from the icon pack show today's date and the time now, so
+     * they are drawn again when those have moved on. Called once a minute while the
+     * launcher is showing.
+     */
+    fun refreshTimeIcons() {
+        val pack = iconPack ?: return
+        val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+        val newDay = pack.hasCalendars && today != calendarDay
+        if (!newDay && !pack.hasClocks) return
+        calendarDay = today
+        var changed = false
+        iconCache.snapshot().keys.forEach { key ->
+            val component = ComponentName.unflattenFromString(key.substringBeforeLast('#')) ?: return@forEach
+            if ((newDay && pack.isCalendar(component)) || pack.isClock(component)) {
+                iconCache.remove(key)
+                changed = true
+            }
+        }
+        if (changed) iconVersion++
+    }
+
     /** Apps that offer themselves as icon packs (ADW/Nova style). Call off the main thread. */
     fun iconPacks(): List<IconPackInfo> {
         val packageManager = context.packageManager
@@ -147,6 +195,34 @@ class AppRepository(private val context: Context) {
             .distinctBy { it.activityInfo.packageName }
             .map { IconPackInfo(it.activityInfo.packageName, it.loadLabel(packageManager).toString()) }
             .sortedBy { it.label.lowercase() }
+            .also { hasIconPacks = it.isNotEmpty() }
+    }
+
+    /** The icons chosen by hand, one per app. Icons on screen load again. */
+    fun setIconChoices(choices: Map<String, IconChoice>) {
+        iconChoices = choices
+        clearIconCache()
+    }
+
+    private fun resourcesOf(pack: String): PackResources? = synchronized(packResources) {
+        packResources.getOrPut(pack) { PackResources.open(context, pack) }
+    }
+
+    /** Every icon in a pack, by drawable name, for the icon picker. Call off the main thread. */
+    fun packIconNames(pack: String): List<String> = IconPack.iconNames(context, pack)
+
+    /** One icon of a pack as shown in the icon picker. Call off the main thread. */
+    fun loadPackIcon(pack: String, name: String): ImageBitmap? {
+        val key = "$pack/$name"
+        pickerIcons.get(key)?.let { return it }
+        val size = (PICKER_ICON_DP * context.resources.displayMetrics.density).toInt()
+        val bitmap = try {
+            resourcesOf(pack)?.drawable(name)?.toBitmap(size, size)?.asImageBitmap()
+        } catch (e: Exception) {
+            null // a drawable the pack lists but that can't be drawn
+        } ?: return null
+        pickerIcons.put(key, bitmap)
+        return bitmap
     }
 
     /**
@@ -155,11 +231,14 @@ class AppRepository(private val context: Context) {
      */
     fun setIconPack(packageName: String?) {
         iconPack = packageName?.let { IconPack.load(context, it) }
+        calendarDay = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
         clearIconCache()
     }
 
     /** Re-reads the current pack if [packageName] is it, e.g. after the pack was updated. */
     fun reloadIconPackIfChanged(packageName: String) {
+        val known = synchronized(packResources) { packResources.remove(packageName) != null }
+        if (known) pickerIcons.evictAll()
         if (iconPack?.packageName == packageName) setIconPack(packageName)
     }
 
@@ -258,6 +337,8 @@ data class AppChange(
 class AppShortcut(val label: String, val info: ShortcutInfo, val icon: ImageBitmap?)
 
 private const val MAX_SHORTCUTS = 4
+
+private const val PICKER_ICON_DP = 48
 
 /** Size shortcut icons are decoded at; the menu draws them at 24 dp. */
 private const val SHORTCUT_ICON_DP = 32

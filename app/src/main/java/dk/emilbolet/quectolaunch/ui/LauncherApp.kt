@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,11 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import dk.emilbolet.quectolaunch.LauncherViewModel
 import dk.emilbolet.quectolaunch.data.LauncherSettings
 import dk.emilbolet.quectolaunch.data.PendingWidget
 import dk.emilbolet.quectolaunch.ui.theme.isDark
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,13 +55,14 @@ fun LauncherApp(
     // Dark icons over the light drawer and settings; light icons over the wallpaper
     SystemBarIcons(
         darkIcons = (drawerOpen || viewModel.settingsOpen || viewModel.widgetPickerOpen ||
-            viewModel.pageManagerOpen) &&
+            viewModel.pageManagerOpen || viewModel.iconPickerApp != null) &&
             !MaterialTheme.colorScheme.isDark,
     )
 
     // Back closes whatever is on top; on the plain home screen it does nothing
     BackHandler {
         when {
+            viewModel.iconPickerApp != null -> viewModel.closeIconPicker()
             viewModel.settingsOpen -> viewModel.closeSettings()
             viewModel.widgetPickerOpen -> viewModel.closeWidgetPicker()
             viewModel.pageManagerOpen -> viewModel.closePageManager()
@@ -66,6 +72,18 @@ fun LauncherApp(
         }
     }
 
+    // Calendar and clock icons from an icon pack follow the date and time while we're showing
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                viewModel.repository.refreshTimeIcons()
+                delay(60_000 - System.currentTimeMillis() % 60_000)
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalChangeIcon provides viewModel::openIconPicker) {
     Box(
         Modifier
             .fillMaxSize()
@@ -205,7 +223,26 @@ fun LauncherApp(
             )
         }
 
+        val iconPickerApp = viewModel.iconPickerApp
+        AnimatedVisibility(visible = iconPickerApp != null, enter = fadeIn(), exit = fadeOut()) {
+            // Still there while the picker fades out
+            val app = remember { iconPickerApp } ?: return@AnimatedVisibility
+            val iconPacks by viewModel.iconPacks.collectAsStateWithLifecycle()
+            IconPicker(
+                app = app,
+                packs = iconPacks,
+                currentPack = settings.iconPack,
+                repository = viewModel.repository,
+                onPick = { choice ->
+                    viewModel.chooseIcon(app, choice)
+                    viewModel.closeIconPicker()
+                },
+                onClose = viewModel::closeIconPicker,
+            )
+        }
+
         DragOverlay(dragState, viewModel.repository)
+    }
     }
 }
 

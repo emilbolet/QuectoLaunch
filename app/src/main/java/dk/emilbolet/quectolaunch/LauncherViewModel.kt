@@ -21,6 +21,7 @@ import dk.emilbolet.quectolaunch.data.HomeDatabase
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
 import dk.emilbolet.quectolaunch.data.HomeLayout
+import dk.emilbolet.quectolaunch.data.IconChoice
 import dk.emilbolet.quectolaunch.data.IconPackInfo
 import dk.emilbolet.quectolaunch.data.LauncherSettings
 import dk.emilbolet.quectolaunch.data.PageRequest
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -59,9 +61,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /**
      * Null until the saved settings have been read. A change of icon pack is loaded before
      * the new settings are passed on, so at startup the first icons drawn are the right ones.
+     * The icons picked by hand are in place by then too.
      */
     val settings: StateFlow<LauncherSettings?> = settingsStore.settings
         .scan(null as LauncherSettings?) { previous, current ->
+            if (previous == null) repository.setIconChoices(settingsStore.iconChoices.first())
             if (previous == null || previous.iconPack != current.iconPack) {
                 withContext(Dispatchers.IO) { repository.setIconPack(current.iconPack) }
             }
@@ -119,6 +123,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     var widgetPickerOpen by mutableStateOf(false)
         private set
 
+    /** The app whose icon is being chosen, while the icon picker is open. */
+    var iconPickerApp by mutableStateOf<AppInfo?>(null)
+        private set
+
     var pageManagerOpen by mutableStateOf(false)
         private set
 
@@ -143,6 +151,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         // The icon pack itself may have been updated or uninstalled
                         withContext(Dispatchers.IO) { repository.reloadIconPackIfChanged(changed) }
                     }
+                    // Also tells the menus whether there is a pack to choose icons from
+                    _iconPacks.value = withContext(Dispatchers.IO) { repository.iconPacks() }
                     val removed = changed.takeIf { change.removed }
                     if (removed != null && change.user != null) {
                         // Separate job, so a burst of changes can't cancel the cleanup halfway
@@ -159,6 +169,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         Alphabet.sections(Alphabet.sort(repository.loadApps()))
                     }
                 }
+        }
+        // Icons picked by hand, after the first set that the settings above wait for
+        viewModelScope.launch {
+            settingsStore.iconChoices.drop(1).collect(repository::setIconChoices)
         }
         // Apps uninstalled while the launcher wasn't running
         viewModelScope.launch(Dispatchers.IO) {
@@ -244,6 +258,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         closeSettings()
         closeWidgetPicker()
         closePageManager()
+        closeIconPicker()
         homeResets++
         if (toFirstPage) showPage(0)
     }
@@ -340,6 +355,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun closeSettings() {
         settingsOpen = false
+    }
+
+    fun openIconPicker(app: AppInfo) {
+        iconPickerApp = app
+    }
+
+    fun closeIconPicker() {
+        iconPickerApp = null
+    }
+
+    /** Gives [app] an icon picked by hand; null goes back to its normal icon. */
+    fun chooseIcon(app: AppInfo, choice: IconChoice?) {
+        viewModelScope.launch { settingsStore.setIconChoice(app.key, choice) }
     }
 
     fun updateSettings(value: LauncherSettings) {

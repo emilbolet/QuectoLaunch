@@ -37,6 +37,11 @@
     <string name="drawer_layout_list">List</string>
     <string name="drawer_layout_note">The grid has as many columns as the home screen.</string>
     <string name="icon_pack">Icon pack</string>
+    <string name="change_icon">Change icon</string>
+    <string name="change_icon_title">Icon for %1$s</string>
+    <string name="change_icon_reset">Use the normal icon</string>
+    <string name="change_icon_search">Search icons</string>
+    <string name="change_icon_none">This icon pack has no icons to choose from.</string>
     <string name="icon_pack_default">Default icons</string>
     <string name="icon_pack_none">No icon packs installed. Install one and it will show up here.</string>
     <string name="gestures">Gestures</string>

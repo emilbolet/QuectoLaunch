@@ -19,7 +19,7 @@ QuectoLaunch er en lille, enkel startskærm (launcher) til Android.
 <b>Gør den til din egen</b>
 <ul>
 <li>Lyst eller mørkt tema, baggrundens farver eller en accentfarve, du selv vælger</li>
-<li>Ikonpakker (ADW/Nova-format)</li>
+<li>Ikonpakker (ADW/Nova-format), og et hvilket som helst ikon fra en pakke til en enkelt app</li>
 <li>Gitterstørrelse og antal ikoner i docken</li>
 <li>Menuer ved langt tryk med appgenveje, Appinfo og Afinstaller</li>
 </ul>
