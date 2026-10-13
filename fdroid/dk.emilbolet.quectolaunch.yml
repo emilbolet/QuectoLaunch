@@ -1,0 +1,31 @@
+# Draft of the F-Droid build recipe. It does not belong in this repository in the end:
+# copy it to metadata/dk.emilbolet.quectolaunch.yml in a fork of
+# https://gitlab.com/fdroid/fdroiddata and open a merge request there.
+#
+# Before that: make the GitHub repository public, tag the release commit v0.1,
+# and replace the commit below with that commit's full hash.
+# Not yet run through "fdroid lint" or "fdroid build".
+Categories:
+  - System
+License: Apache-2.0
+AuthorName: Emil Bolet
+SourceCode: https://github.com/emilbolet/QuectoLaunch
+IssueTracker: https://github.com/emilbolet/QuectoLaunch/issues
+
+AutoName: QuectoLaunch
+
+RepoType: git
+Repo: https://github.com/emilbolet/QuectoLaunch.git
+
+Builds:
+  - versionName: '0.1'
+    versionCode: 1
+    commit: REPLACE_WITH_FULL_HASH_OF_TAG_v0.1
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '0.1'
+CurrentVersionCode: 1

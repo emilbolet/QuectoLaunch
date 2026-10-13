@@ -94,7 +94,7 @@ Patterns to keep:
 - Swipe up anywhere on home, or tap "Apps", to open the drawer.
 - Drawer: alphabetical, with sticky letter headers. Apps are shown as a grid under each letter (the default) or as a list, one app per line; see "App list layout" below.
 - **A–Z scroller (must-have feature for the owner):** strip on the right edge; touch/drag jumps instantly with `scrollToItem`, big letter bubble in the centre while touching, haptic tick per letter, current section highlighted during normal scrolling. Only letters that have apps are shown. Sorting uses the phone's locale, so in Danish Æ, Ø, Å are separate sections at the end, while accented letters like É fold into E in languages that treat them that way.
-- Search: starts-with matches first, then word-start, then contains. Enter opens the top result; a "search the web" row is always last.
+- Search: starts-with matches first, then word-start, then contains. Enter opens the top result; a "search the web" row is always last (it hands the query to whichever app answers `ACTION_WEB_SEARCH`).
 - Long-press: App info, Uninstall (hidden for system and work-profile apps).
 - Drawer closes on Back, Home, pull-down at top of list, and when the activity stops.
 
@@ -227,6 +227,18 @@ Nothing here is started; ask the owner before picking one.
 - Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
 - App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.
 
+### Getting it into F-Droid
+
+The owner wants to submit the app to F-Droid. Done in the repo on 2026-10-13:
+
+- `dependenciesInfo` is off in `app/build.gradle.kts` (F-Droid rejects the encrypted dependency list AGP adds by default). Keep it off.
+- No hard-coded web service: "search the web" uses `ACTION_WEB_SEARCH` and shows a toast if no app handles it (it used to fall back to a google.com URL). In-app text doesn't mention the Play Store. Keep both that way, and keep the app free of the internet permission.
+- Store listing in `fastlane/metadata/android/` (`en-US` and `da`): title, short description (under 80 characters, no full stop), full description, `changelogs/<versionCode>.txt`, icon and five screenshots. The screenshots are from the emulator in English. The descriptions deliberately don't name Microsoft Launcher. Every release needs a new changelog file, and a feature that changes what the listing says needs the descriptions updated.
+- `fdroid/dk.emilbolet.quectolaunch.yml` is a draft of the build recipe for the `fdroiddata` merge request. It has not been through `fdroid lint` or `fdroid build`.
+- `./gradlew assembleRelease` works (unsigned APK) and the result runs on the emulator; lint has no errors.
+
+Still open, and the owner's to do or decide: make the GitHub repo public, push, tag the release `v0.1` (tags must match `versionName`), put the tag's commit hash in the recipe, and open the merge request on GitLab. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
+
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.
 - Custom Recents screen (not possible for third-party launchers).
@@ -236,6 +248,7 @@ Nothing here is started; ask the owner before picking one.
 
 ```
 ./gradlew assembleDebug        # build
+./gradlew assembleRelease      # unsigned release APK, what F-Droid builds
 ./gradlew installDebug         # install on connected device
 ./gradlew lint                 # lint
 adb shell am start -n dk.emilbolet.quectolaunch/.MainActivity

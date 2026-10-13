@@ -1,0 +1,36 @@
+QuectoLaunch er en lille, enkel startskærm (launcher) til Android.
+
+<b>Startskærm</b>
+<ul>
+<li>Et gitter med apps, mapper og widgets oven på din baggrund, på så mange startskærme, du vil</li>
+<li>Uret og søgefeltet er også widgets: flyt dem, skift størrelse, eller fjern dem</li>
+<li>En oversigt over alle startskærme, hvor du tilføjer, flytter og fjerner dem</li>
+<li>En dock, som du stryger op for at få en ekstra række apps, med appnavne, hvis du vil have dem</li>
+</ul>
+
+<b>Appliste</b>
+<ul>
+<li>Alle apps sorteret efter telefonens sprog, så Æ, Ø og Å står til sidst, som gitter eller liste</li>
+<li>En bogstavstribe i højre side, der hopper direkte til et bogstav</li>
+<li>Søg, mens du skriver; Enter åbner det øverste resultat</li>
+<li>Skift mellem Personlig og Arbejde på telefoner med arbejdsprofil</li>
+</ul>
+
+<b>Gør den til din egen</b>
+<ul>
+<li>Lyst eller mørkt tema, baggrundens farver eller en af otte accentfarver</li>
+<li>Ikonpakker (ADW/Nova-format)</li>
+<li>Gitterstørrelse og antal ikoner i docken</li>
+<li>Menuer ved langt tryk med appgenveje, Appinfo og Afinstaller</li>
+</ul>
+
+<b>Valgfri bevægelser</b>
+Dobbelttryk på et tomt sted for at låse telefonen, og stryg ned for at åbne notifikationer. De er slået fra som standard. Android tillader dem kun gennem en tilgængelighedstjeneste, som QuectoLaunch udelukkende bruger til de to bevægelser. Den læser ikke, hvad der står på skærmen.
+
+<b>Privatliv</b>
+Ingen internettilladelse, ingen reklamer, ingen sporing, ingen konti.
+
+<b>Værd at vide</b>
+Koden er skrevet af en AI-kodeassistent efter forfatterens anvisninger og er kun testet i begrænset omfang på rigtige telefoner. Forvent småfejl, og meld dem gerne.
+
+Findes på engelsk og dansk.

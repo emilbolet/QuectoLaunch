@@ -1,0 +1,1 @@
+Simple home screen with an A–Z app list, folders, widgets and a swipe-up dock

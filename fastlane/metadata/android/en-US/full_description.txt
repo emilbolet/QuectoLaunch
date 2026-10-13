@@ -1,0 +1,36 @@
+QuectoLaunch is a small, simple home screen (launcher) for Android.
+
+<b>Home screen</b>
+<ul>
+<li>A grid of apps, folders and widgets over your wallpaper, on as many home screens as you like</li>
+<li>The clock and the search bar are widgets too: move, resize or remove them</li>
+<li>An overview of all home screens where you add, reorder and remove them</li>
+<li>A dock that you swipe up for a second row of apps, with app names if you want them</li>
+</ul>
+
+<b>App list</b>
+<ul>
+<li>All apps sorted A–Z by your phone's language, as a grid or a list</li>
+<li>A letter strip on the right edge that jumps straight to a letter</li>
+<li>Search as you type; Enter opens the top result</li>
+<li>A Personal / Work switch on phones with a work profile</li>
+</ul>
+
+<b>Make it yours</b>
+<ul>
+<li>Light or dark theme, wallpaper colors or one of eight accent colors</li>
+<li>Icon packs (ADW/Nova style)</li>
+<li>Grid size and number of dock icons</li>
+<li>Long-press menus with app shortcuts, App info and Uninstall</li>
+</ul>
+
+<b>Optional gestures</b>
+Double-tap an empty spot to lock the phone and swipe down to open notifications. These are off by default. Android only allows them through an accessibility service, which QuectoLaunch uses for these two gestures and nothing else. It does not read what is on your screen.
+
+<b>Privacy</b>
+No internet permission, no ads, no tracking, no accounts.
+
+<b>Good to know</b>
+The code was written by an AI coding assistant, directed by the author, and has had limited testing on real phones. Expect rough edges and please report problems.
+
+Available in English and Danish.

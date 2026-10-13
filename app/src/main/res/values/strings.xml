@@ -10,6 +10,7 @@
     <string name="app_info">App info</string>
     <string name="uninstall">Uninstall</string>
     <string name="set_default">Set as default home app</string>
+    <string name="no_search_app">No app on this phone can search the web</string>
     <string name="cant_open">Couldn\'t open this app</string>
     <string name="remove">Remove</string>
     <string name="folder">Folder</string>
@@ -34,7 +35,7 @@
     <string name="drawer_layout_note">The grid has as many columns as the home screen.</string>
     <string name="icon_pack">Icon pack</string>
     <string name="icon_pack_default">Default icons</string>
-    <string name="icon_pack_none">No icon packs installed. Install one from the Play Store and it will show up here.</string>
+    <string name="icon_pack_none">No icon packs installed. Install one and it will show up here.</string>
     <string name="gestures">Gestures</string>
     <string name="gestures_switch">Home screen gestures</string>
     <string name="gestures_summary">Double-tap an empty spot to lock the phone. Swipe down to open notifications.</string>

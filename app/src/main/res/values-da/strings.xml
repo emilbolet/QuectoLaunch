@@ -9,6 +9,7 @@
     <string name="app_info">Appinfo</string>
     <string name="uninstall">Afinstaller</string>
     <string name="set_default">Vælg som standardstartskærm</string>
+    <string name="no_search_app">Ingen app på telefonen kan søge på nettet</string>
     <string name="cant_open">Appen kunne ikke åbnes</string>
     <string name="remove">Fjern</string>
     <string name="folder">Mappe</string>
@@ -33,7 +34,7 @@
     <string name="drawer_layout_note">Gitteret har lige så mange kolonner som startskærmen.</string>
     <string name="icon_pack">Ikonpakke</string>
     <string name="icon_pack_default">Standardikoner</string>
-    <string name="icon_pack_none">Der er ikke installeret nogen ikonpakker. Installer en fra Play Butik, så vises den her.</string>
+    <string name="icon_pack_none">Der er ikke installeret nogen ikonpakker. Installer en, så vises den her.</string>
     <string name="gestures">Bevægelser</string>
     <string name="gestures_switch">Bevægelser på startskærmen</string>
     <string name="gestures_summary">Dobbelttryk på et tomt sted for at låse telefonen. Stryg ned for at åbne notifikationer.</string>

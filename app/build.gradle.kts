@@ -38,6 +38,13 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Leaves out the encrypted list of dependencies that only Google Play can read;
+    // F-Droid rejects APKs that contain it
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 }
 
 kotlin {

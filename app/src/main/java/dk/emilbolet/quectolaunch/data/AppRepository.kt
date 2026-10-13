@@ -240,11 +240,8 @@ class AppRepository(private val context: Context) {
         try {
             context.startActivity(search)
         } catch (e: ActivityNotFoundException) {
-            // No search app installed; fall back to the browser
-            val url = Uri.parse("https://www.google.com/search?q=" + Uri.encode(query))
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            // No search app installed. We don't pick a search engine for the user.
+            Toast.makeText(context, R.string.no_search_app, Toast.LENGTH_SHORT).show()
         }
     }
 }
