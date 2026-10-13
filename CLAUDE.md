@@ -1,0 +1,191 @@
+# QuectoLaunch
+
+An Android home-screen launcher: a simplified take on Microsoft Launcher, with its own name and visual design (no Microsoft branding, icons or assets).
+
+The owner is in Denmark and uses a Danish phone, so Danish sorting and text matter.
+
+## Status
+
+**The original six-step roadmap is done**, plus four additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, and widgets. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+
+Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
+
+### How we work
+
+- One feature at a time: build it, check it on the emulator, update this file (a "keep this working" section, the architecture list, the ideas list), then commit.
+- After each feature, tell the owner plainly what was tested and what wasn't, and what behaves differently from what they might expect.
+- When a request is ambiguous, ask before building (the owner once wrote "rows in the app drawer" and meant icons per dock row).
+- Everything has only ever been run on the emulator, in English. It has never been on a real phone.
+
+### This machine
+
+There is no system Java; use the JDK bundled with the Android Studio flatpak:
+
+```
+export JAVA_HOME=/var/lib/flatpak/app/com.google.AndroidStudio/x86_64/stable/active/files/extra/jbr
+```
+
+`adb` and `emulator` are not on `PATH`; they live in `~/Android/Sdk/platform-tools` and `~/Android/Sdk/emulator`. Start the emulator in the background with `~/Android/Sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save -no-boot-anim -no-audio`. If Gradle can't find the SDK, `local.properties` needs `sdk.dir` (Android Studio creates this when the project is opened once).
+
+The project folder is still called `SimpleLauncher`. The `mobile-mcp` server is registered for this project but can't see the emulator until `adb` is on `PATH`; plain `adb` works fine instead.
+
+### Testing on the emulator
+
+- QuectoLaunch is the emulator's default home app and has "always allow" for creating widgets. The owner sometimes uses the emulator window too, so the layout may differ from what a test left behind.
+- Screenshots: `adb exec-out screencap -p > file.png`. Element positions: `adb shell uiautomator dump /sdcard/u.xml`, then read the `bounds`.
+- Drags: `adb shell input draganddrop x1 y1 x2 y2 1500` (long-presses, then drags). For a drag that pauses on the way, chain `adb shell input motionevent DOWN|MOVE|UP x y` with sleeps (moves must exceed the touch slop, about 21 px).
+- Double-tap: `adb shell 'input tap X Y & sleep 0.15; input tap X Y; wait'`.
+- The saved layout: `adb exec-out run-as dk.emilbolet.quectolaunch cat databases/home.db > home.db` (also `-wal` and `-shm`), then `sqlite3`.
+- Swipes that start within about 60 px of the left or right screen edge are taken by Android's Back gesture.
+
+## Stack
+
+- Kotlin, Jetpack Compose, Material 3, single activity (`MainActivity`).
+- AGP 9.4.1 (built-in Kotlin, so no `org.jetbrains.kotlin.android` plugin), Kotlin Compose plugin 2.4.21, Gradle 9.8.1, Compose BOM 2026.09.00, compileSdk 37.0, targetSdk 35, minSdk 26. Upgrading these is fine if something requires it. (The bundled JDK is 25, which needs Gradle 9.1+.)
+- Room 2.8.5 with KSP 2.3.12 for the home layout; DataStore Preferences 1.2.1 for settings.
+- No dependency injection framework, no navigation library. Keep dependencies minimal.
+
+## Architecture
+
+```
+app/src/main/java/dk/emilbolet/quectolaunch/
+  MainActivity.kt          Edge-to-edge, goes back to plain home on Home press (onNewIntent) and onStop; widget bind/configure results
+  GestureService.kt        AccessibilityService used only for lock screen and open notifications
+  LauncherViewModel.kt     App sections, home layout and settings (StateFlow); drawerOpen, query, openFolderId, settingsOpen (Compose state)
+  data/
+    AppInfo.kt             Wraps LauncherActivityInfo; `key` = component + user
+    Alphabet.kt            Locale-aware sort (Collator) and A–Z sections
+    AppRepository.kt       LauncherApps: load apps, change callback, icons (LruCache, icon pack), shortcuts, launch, uninstall, web search
+    IconPack.kt            Parses an icon pack's appfilter.xml and resolves its drawables
+    HomeDatabase.kt        Room: HomeItem entity, HomeDao (drop/remove/folder/widget placement rules live here, in transactions)
+    HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
+    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, icon pack, gestures) and SettingsStore (DataStore)
+    Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
+    SystemControls.kt      Quick toggles (flashlight, intents for the system panels) and the gesture actions
+  ui/
+    LauncherApp.kt         Root: home, folder popup, drawer, drag overlay; root pointer input that follows drags
+    HomeScreen.kt          Clock, default-home button, grid, search bar, EntryCell (icon + label + menu), scrim behind the open dock
+    Widgets.kt             WidgetLayer (widgets drawn over a page's cells), resize handles
+    WidgetPicker.kt        List of installed widgets by app (in-tree overlay)
+    Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows and the quick toggles
+    FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
+    DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
+    AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall)
+    SettingsScreen.kt      Theme, accent color, icon pack, grid size and gestures with the accessibility disclosure (in-tree overlay)
+    AppDrawer.kt           Search field, sectioned list with sticky headers, results, letter bubble
+    AlphabetScroller.kt    The A–Z strip
+    theme/Theme.kt         Material 3; wallpaper colors on Android 12+ or a scheme built from the accent color
+```
+
+Patterns to keep:
+- All system calls about apps go through `AppRepository`. UI never calls `PackageManager`/`LauncherApps` directly.
+- Use `LauncherApps` (not `PackageManager.queryIntentActivities`) so work-profile apps work.
+- Heavy work (loading apps, decoding icons, parsing XML) off the main thread.
+- All user-facing text in `res/values/strings.xml`. Add Danish translations in `res/values-da/strings.xml` as features are added.
+- Drags are tracked by `DragState.trackDrag` on the root Box (Initial pass), not by the icon that was long-pressed, so a drag survives the drawer or folder closing under it. Anything icons can be dragged out of must be drawn in the main Compose tree, not in a Dialog/Popup window.
+- Icons report long-press with `dragState.longPress(source, menuKey)`; the menu shows while `dragState.menuKey` matches and closes when the finger moves (drag starts).
+- No `QUERY_ALL_PACKAGES`. The `<queries>` block in the manifest gives visibility of launchable apps.
+
+## What step 1 does (keep this working)
+
+- Home screen: wallpaper (window shows it via the theme), clock + date, "Set as default home app" button (RoleManager `ROLE_HOME`) until default.
+- Swipe up anywhere on home, or tap "Apps", to open the drawer.
+- Drawer: vertical alphabetical list with sticky letter headers.
+- **A–Z scroller (must-have feature for the owner):** strip on the right edge; touch/drag jumps instantly with `scrollToItem`, big letter bubble in the centre while touching, haptic tick per letter, current section highlighted during normal scrolling. Only letters that have apps are shown. Sorting uses the phone's locale, so in Danish Æ, Ø, Å are separate sections at the end, while accented letters like É fold into E in languages that treat them that way.
+- Search: starts-with matches first, then word-start, then contains. Enter opens the top result; a "search the web" row is always last.
+- Long-press: App info, Uninstall (hidden for system and work-profile apps).
+- Drawer closes on Back, Home, pull-down at top of list, and when the activity stops.
+
+## What step 2 does (keep this working)
+
+- Home: grid of pinned apps (5×5 by default) with labels, a search bar (opens the drawer with the keyboard up), a small chevron (opens the drawer), and a 5-slot dock without labels.
+- Layout is saved in Room (`home.db`, table `home_items`: container = home (-1) / dock (-2) / folder id, page, position, appKey, title). Home and dock positions = row × 100 + column (`cellPosition`), so they don't depend on the grid or dock size.
+- Long-press an app in the drawer or on home: menu with app shortcuts (default launcher only), Remove (home only), App info, Uninstall. Keep holding and move to drag; the drawer/folder closes and the icon follows the finger; the cell under the finger lights up.
+- Drop rules (`HomeDao.drop`): empty cell → place; app on app → new folder; app on folder → joins it; folder on something → swap. Dropping outside the grid and dock cancels.
+- Folders: tap to open a popup, tap the title to rename, drag apps out. A folder left with one app turns back into that app.
+- Uninstalled apps are removed from the layout (on the removal callback, and at startup for apps removed while we weren't running). Disabled/unavailable apps are only hidden.
+- Not done yet: reordering inside a folder, shortcut icons in the menu.
+
+## What step 3 does (keep this working)
+
+- The dock is a bottom sheet (`AnchoredDraggableState<DockValue>`, created in `LauncherApp`). Collapsed: one row of apps (5 by default). Expanded: it grows upwards to show a second row and the quick toggles, turns solid, and dims the rest of the screen.
+- Gesture rule: a swipe up that starts on the dock expands it (the dock's `anchoredDraggable` consumes the drag); a swipe up anywhere else opens the drawer (`detectVerticalDragGestures` on the home screen).
+- The dock collapses on swipe down, tap outside, Back, Home and when returning from another app (`LauncherViewModel.homeResets`).
+- Dragging: holding an icon over the collapsed dock for 500 ms opens it so the second row can be reached. `DragState.dockRowBounds` holds the visible part of each row; the open dock is checked before the grid it covers.
+- Toggles: Flashlight switches directly and shows its state (hidden if the phone has no flash); Wi‑Fi and Sound open the system panels; Bluetooth and Settings open settings screens. No permissions are needed for any of this.
+- Not done: brightness slider (needs `WRITE_SETTINGS`), on/off state for Wi‑Fi and Bluetooth (needs extra permissions).
+
+## What step 4 does (keep this working)
+
+- Long-press on empty home space shows a small menu: Widgets, Launcher settings. The settings screen closes on Back or Home; changes apply and save immediately.
+- Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
+- Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
+- Grid size: 4–6 columns, 4–7 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
+- Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
+- Room is at schema version 4 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns). Add a migration for any further schema change.
+
+## What step 5 does (keep this working)
+
+- Settings has an "Icon pack" section listing installed packs (apps answering `org.adw.launcher.THEMES` or `com.novalauncher.THEME`; both are in `<queries>`), plus "Default icons".
+- `IconPack.load` reads `res/xml/appfilter.xml` (or `assets/appfilter.xml`) through `createPackageContext` and maps component → drawable name; drawables are looked up by name (`drawable`, then `mipmap`). Apps the pack doesn't cover keep their own icon.
+- `AppRepository.setIconPack` swaps the pack and clears the icon cache. `iconVersion` (Compose state) goes up on every cache clear and is a key in `AppIcon`, so icons on screen reload.
+- The pack is loaded before the first settings value is published (`LauncherViewModel.settings`), so startup never shows the default icons first.
+- If the chosen pack is updated it is re-read; if it is uninstalled the launcher falls back to default icons.
+- Not done: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, calendar/clock dynamic icons, per-app icon choice.
+- To test without a real pack: build a tiny app with an activity filtering `org.adw.launcher.THEMES`, a `res/xml/appfilter.xml` and a couple of drawables.
+
+## What step 6 does (keep this working)
+
+- Settings → Gestures → "Home screen gestures", **off by default**. When on: double-tap on empty home space locks the phone (Android 9+), swipe down on home opens notifications. Swipe up still opens the drawer; icons keep their own taps.
+- Both actions go through `GestureService` (`performGlobalAction`). It requests no events and `canRetrieveWindowContent="false"`. Never use `DevicePolicyManager.lockNow()` (it disables fingerprint/face for the next unlock).
+- Google Play policy: turning the switch on without accessibility access first shows the in-app disclosure dialog; only "Continue" opens the system accessibility settings. Keep that order, and keep the disclosure text accurate if the service ever does more.
+- If the setting is on but the service is off, settings shows a red hint and the gestures show a toast.
+- To test: `adb shell settings put secure enabled_accessibility_services dk.emilbolet.quectolaunch/dk.emilbolet.quectolaunch.GestureService` enables the service. For a double-tap from adb: `adb shell 'input tap 540 1100 & sleep 0.15; input tap 540 1100; wait'` (two separate `input tap` calls are too slow).
+
+## Home pages (keep this working)
+
+- The home grid is a `HorizontalPager`; swipe sideways between pages. Dots above the chevron show the page (hidden with one page). The clock, search bar and dock are the same on every page.
+- There is no "add page" button. While an icon is dragged, one spare empty page exists at the end; holding the icon at the left or right screen edge for 600 ms turns the page. Dropping on the spare page creates it.
+- `HomeItem.page` is the page (0 for dock and folder contents); `HomeLayout.pages` is the list the UI draws; `DropTarget.page` comes from `DragState.gridPage` (the pager's current page).
+- Empty pages are closed up by `HomeDao.compactPages()` only at startup and on a Home press, when the pager scrolls back to page 0 anyway. Don't compact while the user is looking at a later page, or the content shifts under them.
+- Home press (`onNewIntent`) goes to the first page; returning from an app (`onStop`) keeps the current page.
+
+## Widgets (keep this working)
+
+- Add: long-press empty home space → Widgets → tap one. `MainActivity.addWidget` then runs up to three steps: bind (`bindAppWidgetIdIfAllowed`; the first time Android shows its own "Create widget and allow access?" dialog), the widget's setup screen if it needs one, and `LauncherViewModel.placePendingWidget`, which puts it in the first free spot from the current page on (a new page if needed) and scrolls there.
+- A widget is a `HomeItem` with `appWidgetId`, `widgetProvider`, `spanX`, `spanY`; `position` is its top-left cell. `WidgetEntry` is what the UI gets. Widgets live on home pages only, never in the dock or folders.
+- Drawing: each page is the grid of `DropCell`s with `WidgetLayer` on top, which places an `AndroidView` (the `AppWidgetHostView`) over the cells the widget covers.
+- Long-press: `LauncherWidgetHostView` detects it in `onInterceptTouchEvent` (so it also works on the widget's buttons) and calls `dragState.longPress`, the same entry point as icons. Menu: Resize, Remove. Keep holding and move to drag; the cells it would cover light up, and the drop is ignored unless they are all free.
+- Resize: handles on the right and bottom edge, one cell per step, only into free cells. Tap elsewhere or Back to finish. The handles use `systemGestureExclusion` because a full-width widget's handle sits in Android's Back-gesture zone.
+- Nothing can be dropped onto a widget (`HomeDao.drop` checks). Swiping pages over a widget works because Compose's `AndroidView` only hands moves to the view after the pager had its chance.
+- The host listens between `onStart` and `onStop`. Widget rows are removed (and the ID given back) when the widget is removed, its app is uninstalled, or its info is gone at startup.
+- Widgets outside a smaller grid are hidden like apps.
+
+## Ideas and leftovers
+
+Nothing here is started; ask the owner before picking one.
+
+- Reordering apps inside a folder; icons for app shortcuts in the long-press menu.
+- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions, editable quick toggles.
+- A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
+- Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
+- Brightness slider in the dock (needs `WRITE_SETTINGS`); on/off state for the Wi‑Fi and Bluetooth toggles (needs permissions).
+- Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
+- A free-form accent color picker instead of presets.
+- Never tested on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
+
+### Out of scope
+- The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.
+- Custom Recents screen (not possible for third-party launchers).
+- Daily wallpaper (maybe later).
+
+## Commands
+
+```
+./gradlew assembleDebug        # build
+./gradlew installDebug         # install on connected device
+./gradlew lint                 # lint
+adb shell am start -n dk.emilbolet.quectolaunch/.MainActivity
+```
+
+The application ID, namespace and code package are `dk.emilbolet.quectolaunch`. Changing the ID makes Android treat it as a new app (saved layout and settings are not carried over).

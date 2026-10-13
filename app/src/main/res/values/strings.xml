@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">QuectoLaunch</string>
+    <string name="apps">Apps</string>
+    <string name="search_apps">Search apps</string>
+    <string name="clear_search">Clear search</string>
+    <string name="search_web">Search the web for \"%1$s\"</string>
+    <string name="app_info">App info</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="set_default">Set as default home app</string>
+    <string name="cant_open">Couldn\'t open this app</string>
+    <string name="remove">Remove</string>
+    <string name="folder">Folder</string>
+    <string name="home_empty_hint">Swipe up for your apps. Hold an app and drag it here to pin it.</string>
+    <string name="flashlight">Flashlight</string>
+    <string name="wifi">Wi‑Fi</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="sound">Sound</string>
+    <string name="settings">Settings</string>
+    <string name="launcher_settings">Launcher settings</string>
+    <string name="back">Back</string>
+    <string name="theme">Theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="accent_color">Accent color</string>
+    <string name="use_wallpaper_colors">Use wallpaper colors</string>
+    <string name="accent_number">Color %1$d</string>
+    <string name="grid_columns">Home screen columns</string>
+    <string name="grid_rows">Home screen rows</string>
+    <string name="dock_slots">Icons per dock row</string>
+    <string name="grid_size_note">Apps that don\'t fit in a smaller grid or dock are hidden, not removed. They come back when you make it bigger again.</string>
+    <string name="icon_pack">Icon pack</string>
+    <string name="icon_pack_default">Default icons</string>
+    <string name="icon_pack_none">No icon packs installed. Install one from the Play Store and it will show up here.</string>
+    <string name="gestures">Gestures</string>
+    <string name="gestures_switch">Home screen gestures</string>
+    <string name="gestures_summary">Double-tap an empty spot to lock the phone. Swipe down to open notifications.</string>
+    <string name="gestures_summary_no_lock">Swipe down on the home screen to open notifications.</string>
+    <string name="gestures_access_off">Accessibility access is off, so the gestures won\'t work. Tap to turn it on.</string>
+    <string name="gestures_need_access">Turn on accessibility access for QuectoLaunch to use this gesture</string>
+    <string name="gestures_disclosure_title">Allow accessibility access?</string>
+    <string name="gestures_disclosure_text">Android only lets apps lock the screen and open notifications through an accessibility service.\n\nQuectoLaunch uses its accessibility service for those two gestures and nothing else. It does not read what is on your screen, and it does not collect or share any data.\n\nOn the next screen, choose QuectoLaunch and turn it on. You can turn it off again at any time.</string>
+    <string name="gestures_disclosure_continue">Continue</string>
+    <string name="gestures_disclosure_cancel">No thanks</string>
+    <string name="gesture_service_description">Lets you lock the phone by double-tapping the home screen and open notifications by swiping down. QuectoLaunch does not read what is on your screen and does not collect any data.</string>
+    <string name="widgets">Widgets</string>
+    <string name="widget_size" translatable="false">%1$d × %2$d</string>
+    <string name="resize">Resize</string>
+</resources>
