@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { System, Light, Dark }
@@ -19,7 +21,8 @@ data class LauncherSettings(
     /** Accent color as ARGB; null means the wallpaper's colors (Android 12+) or the default. */
     val accent: Int? = null,
     val columns: Int = 5,
-    val rows: Int = 5,
+    /** Rows of the home grid, including the ones the clock and search bar normally sit in. */
+    val rows: Int = 7,
     /** Icons in each of the dock's rows. */
     val dockSlots: Int = 5,
     val drawerLayout: DrawerLayout = DrawerLayout.Grid,
@@ -30,7 +33,7 @@ data class LauncherSettings(
 ) {
     companion object {
         val COLUMN_CHOICES = 4..6
-        val ROW_CHOICES = 4..7
+        val ROW_CHOICES = 4..9
         val DOCK_SLOT_CHOICES = 4..7
 
         /** Accent colors offered in settings; the first is also the fallback before Android 12. */
@@ -47,6 +50,9 @@ data class LauncherSettings(
     }
 }
 
+/** The grid's rows before the clock and search bar moved onto it. */
+private const val OLD_DEFAULT_ROWS = 5
+
 private val Context.dataStore by preferencesDataStore(name = "settings")
 
 /** Launcher settings, kept in DataStore. */
@@ -60,8 +66,28 @@ class SettingsStore(private val context: Context) {
     private val drawerLayoutKey = stringPreferencesKey("drawer_layout")
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
+    private val rowsForBuiltInsKey = booleanPreferencesKey("rows_for_built_ins")
 
-    val settings: Flow<LauncherSettings> = context.dataStore.data.map { prefs ->
+    val settings: Flow<LauncherSettings> = flow {
+        addRowsForBuiltIns()
+        emitAll(savedSettings)
+    }
+
+    /**
+     * One-time step when the clock and the search bar became widgets on the grid: the grid
+     * takes over the space they had, as two more rows. See [HomeDao.placeBuiltIns].
+     */
+    private suspend fun addRowsForBuiltIns() {
+        context.dataStore.edit { prefs ->
+            if (prefs[rowsForBuiltInsKey] != true) {
+                prefs[rowsKey] = ((prefs[rowsKey] ?: OLD_DEFAULT_ROWS) + 2)
+                    .coerceIn(LauncherSettings.ROW_CHOICES)
+                prefs[rowsForBuiltInsKey] = true
+            }
+        }
+    }
+
+    private val savedSettings: Flow<LauncherSettings> = context.dataStore.data.map { prefs ->
         val defaults = LauncherSettings()
         LauncherSettings(
             themeMode = ThemeMode.entries.firstOrNull { it.name == prefs[themeModeKey] }

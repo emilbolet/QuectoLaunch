@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -31,13 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.BuiltInWidget
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.WidgetEntry
@@ -59,6 +63,8 @@ fun BoxScope.WidgetLayer(
     widgetHost: WidgetHost,
     dragState: DragState,
     resizingId: Long?,
+    /** A tap on the built-in search bar. */
+    onSearch: () -> Unit,
     onResizingChange: (Long?) -> Unit,
     onResize: (WidgetEntry, spanX: Int, spanY: Int) -> Unit,
     onRemove: (WidgetEntry) -> Unit,
@@ -90,6 +96,7 @@ fun BoxScope.WidgetLayer(
                     dragState = dragState,
                     widthDp = (cellWidth * widget.spanX - WidgetPadding * 2).value,
                     heightDp = (cellHeight * widget.spanY - WidgetPadding * 2).value,
+                    onSearch = onSearch,
                     onStartResize = { onResizingChange(widget.id) },
                     onRemove = { onRemove(widget) },
                 )
@@ -110,7 +117,10 @@ fun BoxScope.WidgetLayer(
 
 private val WidgetPadding = 4.dp
 
-/** One live widget. Long-press for Resize and Remove; keep holding and move to drag it. */
+/**
+ * One live widget, either an Android one or one of the launcher's own. Long-press for Resize
+ * and Remove; keep holding and move to drag it.
+ */
 @Composable
 private fun WidgetCell(
     widget: WidgetEntry,
@@ -118,6 +128,7 @@ private fun WidgetCell(
     dragState: DragState,
     widthDp: Float,
     heightDp: Float,
+    onSearch: () -> Unit,
     onStartResize: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -132,17 +143,39 @@ private fun WidgetCell(
             .padding(WidgetPadding)
             .alpha(if (beingDragged) 0.35f else 1f)
     ) {
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(20.dp)),
-            factory = { context ->
-                widgetHost.createView(context, widget.appWidgetId, widget.info).apply {
-                    onLongPress = { dragState.longPress(DragSource.Placed(current), current.id) }
-                }
-            },
-            update = { it.reportSize(widthDp, heightDp) },
-        )
+        val builtIn = widget.builtIn
+        val appWidgetId = widget.appWidgetId
+        val info = widget.info
+        if (builtIn != null) {
+            val haptics = LocalHapticFeedback.current
+            BuiltInWidgetContent(
+                widget = builtIn,
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Same long-press entry point as icons and Android widgets
+                    .pointerInput(builtIn) {
+                        detectTapGestures(
+                            onTap = { if (builtIn == BuiltInWidget.Search) onSearch() },
+                            onLongPress = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                dragState.longPress(DragSource.Placed(current), current.id)
+                            },
+                        )
+                    },
+            )
+        } else if (appWidgetId != null && info != null) {
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp)),
+                factory = { context ->
+                    widgetHost.createView(context, appWidgetId, info).apply {
+                        onLongPress = { dragState.longPress(DragSource.Placed(current), current.id) }
+                    }
+                },
+                update = { it.reportSize(widthDp, heightDp) },
+            )
+        }
 
         DropdownMenu(
             expanded = dragState.menuKey == widget.id,

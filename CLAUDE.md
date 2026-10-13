@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, and icons in the long-press menus. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -64,9 +64,10 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     SystemControls.kt      Quick toggles (flashlight, intents for the system panels) and the gesture actions
   ui/
     LauncherApp.kt         Root: home, folder popup, drawer, drag overlay; root pointer input that follows drags
-    HomeScreen.kt          Clock, default-home button, grid, search bar, EntryCell (icon + label + menu), scrim behind the open dock
-    Widgets.kt             WidgetLayer (widgets drawn over a page's cells), resize handles
-    WidgetPicker.kt        List of installed widgets by app (in-tree overlay)
+    HomeScreen.kt          Default-home button, grid, EntryCell (icon + label + menu), scrim behind the open dock
+    BuiltInWidgets.kt      The launcher's own widgets: clock and search bar (plain composables)
+    Widgets.kt             WidgetLayer (Android and built-in widgets drawn over a page's cells), resize handles
+    WidgetPicker.kt        The launcher's own widgets, then installed widgets by app (in-tree overlay)
     PageManager.kt         "Home screens" overview: page previews, drag to reorder, add, remove (in-tree overlay)
     Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows and the quick toggles
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
@@ -89,7 +90,7 @@ Patterns to keep:
 
 ## What step 1 does (keep this working)
 
-- Home screen: wallpaper (window shows it via the theme), clock + date, "Set as default home app" button (RoleManager `ROLE_HOME`) until default.
+- Home screen: wallpaper (window shows it via the theme), clock + date (since a widget, see "Clock and search bar as widgets"), "Set as default home app" button (RoleManager `ROLE_HOME`) above the grid until default.
 - Swipe up anywhere on home, or tap "Apps", to open the drawer.
 - Drawer: alphabetical, with sticky letter headers. Apps are shown as a grid under each letter (the default) or as a list, one app per line; see "App list layout" below.
 - **A–Z scroller (must-have feature for the owner):** strip on the right edge; touch/drag jumps instantly with `scrollToItem`, big letter bubble in the centre while touching, haptic tick per letter, current section highlighted during normal scrolling. Only letters that have apps are shown. Sorting uses the phone's locale, so in Danish Æ, Ø, Å are separate sections at the end, while accented letters like É fold into E in languages that treat them that way.
@@ -99,7 +100,7 @@ Patterns to keep:
 
 ## What step 2 does (keep this working)
 
-- Home: grid of pinned apps (5×5 by default) with labels, a search bar (opens the drawer with the keyboard up), a small chevron (opens the drawer), and a 5-slot dock without labels.
+- Home: grid of pinned apps (5 columns × 7 rows by default, the top and bottom row normally holding the clock and search bar) with labels, a search bar (a widget; opens the drawer with the keyboard up), a small chevron (opens the drawer), and a 5-slot dock without labels.
 - Layout is saved in Room (`home.db`, table `home_items`: container = home (-1) / dock (-2) / folder id, page, position, appKey, title). Home and dock positions = row × 100 + column (`cellPosition`), so they don't depend on the grid or dock size.
 - Long-press an app in the drawer or on home: menu with app shortcuts (default launcher only), Remove (home only), App info, Uninstall. Keep holding and move to drag; the drawer/folder closes and the icon follows the finger; the cell under the finger lights up.
 - Drop rules (`HomeDao.drop`): empty cell → place; app on app → new folder; app on folder → joins it; folder on something → swap. Dropping outside the grid and dock cancels.
@@ -121,9 +122,9 @@ Patterns to keep:
 - Long-press on empty home space shows a small menu: Widgets, Home screens, Launcher settings. The settings screen closes on Back or Home; changes apply and save immediately.
 - Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
 - Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
-- Grid size: 4–6 columns, 4–7 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
+- Grid size: 4–6 columns, 4–9 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
 - Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
-- Room is at schema version 5 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns; 4→5 added the `home_meta` table with the page count). Add a migration for any further schema change.
+- Room is at schema version 6 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns; 4→5 added the `home_meta` table with the page count; 5→6 added `home_items.builtIn` and `home_meta.layoutVersion`). Add a migration for any further schema change.
 
 ## What step 5 does (keep this working)
 
@@ -145,7 +146,7 @@ Patterns to keep:
 
 ## Home pages (keep this working)
 
-- The home grid is a `HorizontalPager`; swipe sideways between pages. Dots above the chevron show the page (hidden with one page). The clock, search bar and dock are the same on every page.
+- The home grid is a `HorizontalPager`; swipe sideways between pages. Dots above the chevron show the page (hidden with one page). The dock is the same on every page; the clock and search bar are widgets and sit on one page.
 - While an icon is dragged, one spare empty page exists at the end; holding the icon at the left or right screen edge for 600 ms turns the page. Dropping on the spare page creates it. Pages can also be added in the "Home screens" overview (next section).
 - `HomeItem.page` is the page (0 for dock and folder contents); `HomeLayout.pages` is the list the UI draws; `DropTarget.page` comes from `DragState.gridPage` (the pager's current page).
 - The number of pages is saved (`home_meta.pages`), so a page stays when it becomes empty. Pages are only removed by the user, in the overview. (Before the overview existed, empty pages were closed up automatically at startup and on a Home press; that is gone.)
@@ -197,6 +198,19 @@ Patterns to keep:
 - Fixed actions use `MenuIcon` with an outlined Material icon from `material-icons-core` (Close for Remove, Info, Delete for Uninstall, Home, Settings). Icons the core set lacks are vector drawables (`ic_widgets`, `ic_resize`); the extended icon library is deliberately not a dependency.
 - App shortcuts show their own icon in its own colors (`AppShortcut.icon`, loaded with `getShortcutIconDrawable` together with the shortcut list, off the main thread). A shortcut without an icon gets an empty gap so the labels stay in line.
 
+## Clock and search bar as widgets (keep this working)
+
+- The clock and the search bar are "built-in widgets": `HomeItem.builtIn` is `clock` or `search` (`BuiltInWidget`), and the UI gets a `WidgetEntry` with `builtIn` set and no `appWidgetId`/`info`. `HomeItem.isWidget` is true for both kinds, so every widget rule (spans, nothing dropped on them, not in the dock or folders, move, resize, hidden outside a smaller grid) applies unchanged.
+- They are plain composables (`BuiltInWidgetContent`), drawn by `WidgetLayer`/`WidgetCell` in place of the `AndroidView`. No widget host, no Android widget ID. Long-press goes through `dragState.longPress` like everything else; the menu is Resize and Remove. A tap on the search bar opens the drawer with the keyboard up; a tap on the clock does nothing.
+- The clock's text follows the widget's size (the date is dropped when it is very low); the search bar is at most 48 dp high.
+- Add again: the Widgets list starts with a "QuectoLaunch" group (Clock, Search bar). A new one is a full row wide and one row high and goes to the first free row from the current page on. More than one of each is allowed.
+- One-time step, also how a new installation gets them. Before, both were drawn outside the grid on every page. Now:
+  - `SettingsStore.addRowsForBuiltIns` adds 2 to the saved rows (flag `rows_for_built_ins`), before the first settings value is published. The default is now 7 rows.
+  - `HomeDao.placeBuiltIns` (guarded by `home_meta.layoutVersion`) moves every home item one row down, puts the clock on row 0 and the search bar on the last row of page 0, both full width. It runs before the first layout is published (`LauncherViewModel.layout`).
+  - Each half is safe to repeat and they don't depend on each other's success, because one is in DataStore and the other in Room.
+- `HomeLayout.isEmpty` ignores built-in widgets, so the "swipe up for your apps" hint still shows on a new installation.
+- Known differences from before: icons sit a little higher than they did (the clock's row is lower than its old area, the search bar's row is higher); the chevron is below the search bar instead of above it; pages other than the first have two empty rows where the clock and search bar used to show.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
@@ -204,6 +218,7 @@ Nothing here is started; ask the owner before picking one.
 - Reordering apps inside a folder.
 - Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions, editable quick toggles.
 - A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
+- Clock widget: opening the clock app on tap, a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
 - Brightness slider in the dock (needs `WRITE_SETTINGS`); on/off state for the Wi‑Fi and Bluetooth toggles (needs permissions).
 - Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.

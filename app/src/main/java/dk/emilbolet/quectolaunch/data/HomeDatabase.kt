@@ -6,6 +6,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
@@ -16,7 +17,10 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
-/** One saved item: an app shortcut (has [appKey]), a widget (has [appWidgetId]) or a folder (neither). */
+/**
+ * One saved item: an app shortcut (has [appKey]), an Android widget (has [appWidgetId]), one of
+ * the launcher's own widgets (has [builtIn]) or a folder (none of them).
+ */
 @Entity(tableName = "home_items")
 data class HomeItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -37,9 +41,12 @@ data class HomeItem(
     /** How many cells the item covers; more than 1 only for widgets. */
     @ColumnInfo(defaultValue = "1") val spanX: Int = 1,
     @ColumnInfo(defaultValue = "1") val spanY: Int = 1,
+    /** [BuiltInWidget.key] for the launcher's own clock or search bar; null for everything else. */
+    val builtIn: String? = null,
 ) {
-    val isWidget: Boolean get() = appWidgetId != null
-    val isFolder: Boolean get() = appKey == null && appWidgetId == null
+    /** An Android widget or a built-in one: covers several cells and can't be stacked or put in a folder. */
+    val isWidget: Boolean get() = appWidgetId != null || builtIn != null
+    val isFolder: Boolean get() = appKey == null && !isWidget
 
     val row: Int get() = position / CELL_STRIDE
     val column: Int get() = position % CELL_STRIDE
@@ -55,11 +62,16 @@ data class HomeItem(
     }
 }
 
-/** A single row ([id] 0) with the number of home pages, so that a page can exist while it is empty. */
+/**
+ * A single row ([id] 0) about the layout as a whole: the number of home pages, so that a page
+ * can exist while it is empty, and [layoutVersion], which is 1 once the clock and search bar
+ * have been put on the grid as widgets.
+ */
 @Entity(tableName = "home_meta")
 data class HomeMeta(
     @PrimaryKey val id: Int = 0,
     val pages: Int,
+    @ColumnInfo(defaultValue = "0") val layoutVersion: Int = 0,
 )
 
 @Dao
@@ -69,11 +81,20 @@ abstract class HomeDao {
     @Query("SELECT pages FROM home_meta WHERE id = 0")
     abstract fun observeStoredPages(): Flow<Int?>
 
-    @Query("SELECT pages FROM home_meta WHERE id = 0")
-    protected abstract suspend fun storedPages(): Int?
+    @Query("SELECT * FROM home_meta WHERE id = 0")
+    protected abstract suspend fun meta(): HomeMeta?
 
-    @Query("INSERT OR REPLACE INTO home_meta (id, pages) VALUES (0, :pages)")
-    protected abstract suspend fun setPages(pages: Int)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    protected abstract suspend fun saveMeta(meta: HomeMeta)
+
+    private suspend fun storedPages(): Int? = meta()?.pages
+
+    private suspend fun setPages(pages: Int) {
+        saveMeta((meta() ?: HomeMeta(pages = pages)).copy(pages = pages))
+    }
+
+    @Query("UPDATE home_items SET position = position + :by WHERE container = ${HomeItem.HOME}")
+    protected abstract suspend fun shiftHomePositions(by: Int)
 
     @Query(
         "DELETE FROM home_items WHERE container IN " +
@@ -211,18 +232,51 @@ abstract class HomeDao {
     }
 
     /**
+     * One-time step when the clock and the search bar became widgets. They used to be drawn
+     * above and below the grid; the grid now covers that space with two more rows ([rows]
+     * already counts them). Everything moves down a row, so it stays where it was on screen,
+     * and the clock gets the new top row and the search bar the new bottom row of the first
+     * page. A new installation gets its clock and search bar the same way.
+     */
+    @Transaction
+    open suspend fun placeBuiltIns(columns: Int, rows: Int) {
+        val meta = meta() ?: HomeMeta(pages = pageCount())
+        if (meta.layoutVersion >= 1) return
+        shiftHomePositions(by = CELL_STRIDE)
+        insert(
+            HomeItem(
+                container = HomeItem.HOME,
+                position = cellPosition(0, 0),
+                builtIn = BuiltInWidget.Clock.key,
+                spanX = columns,
+            )
+        )
+        insert(
+            HomeItem(
+                container = HomeItem.HOME,
+                position = cellPosition(rows - 1, 0),
+                builtIn = BuiltInWidget.Search.key,
+                spanX = columns,
+            )
+        )
+        saveMeta(meta.copy(layoutVersion = 1))
+    }
+
+    /**
      * Adds a widget at the first free spot big enough for it, starting on [startPage] and
      * going on to later pages (a new one if need be). Returns the page it landed on.
+     * An Android widget has [appWidgetId] and [provider]; one of our own has [builtIn].
      */
     @Transaction
     open suspend fun placeWidget(
-        appWidgetId: Int,
-        provider: String,
+        appWidgetId: Int?,
+        provider: String?,
         startPage: Int,
         columns: Int,
         rows: Int,
         spanX: Int,
         spanY: Int,
+        builtIn: String? = null,
     ): Int {
         val newPage = pageCount()
         for (page in startPage.coerceIn(0, newPage)..newPage) {
@@ -239,6 +293,7 @@ abstract class HomeDao {
                                 widgetProvider = provider,
                                 spanX = spanX,
                                 spanY = spanY,
+                                builtIn = builtIn,
                             )
                         )
                         growPages()
@@ -339,14 +394,14 @@ abstract class HomeDao {
 /** Where a page's items are parked while the pages around it are renumbered. */
 private const val PAGE_IN_TRANSIT = -1
 
-@Database(entities = [HomeItem::class, HomeMeta::class], version = 5, exportSchema = false)
+@Database(entities = [HomeItem::class, HomeMeta::class], version = 6, exportSchema = false)
 abstract class HomeDatabase : RoomDatabase() {
     abstract fun homeDao(): HomeDao
 
     companion object {
         fun create(context: Context): HomeDatabase =
             Room.databaseBuilder(context, HomeDatabase::class.java, "home.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
 
         /** Version 1 numbered home cells as row * 5 + column, which broke when the grid changed size. */
@@ -390,6 +445,17 @@ abstract class HomeDatabase : RoomDatabase() {
                     "INSERT INTO home_meta (id, pages) " +
                         "SELECT 0, COALESCE(MAX(page), 0) + 1 FROM home_items WHERE container = ${HomeItem.HOME}"
                 )
+            }
+        }
+
+        /**
+         * The clock and search bar as widgets. Only the columns are added here; the items
+         * themselves need the grid size from settings, so [HomeDao.placeBuiltIns] adds them.
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE home_items ADD COLUMN builtIn TEXT")
+                db.execSQL("ALTER TABLE home_meta ADD COLUMN layoutVersion INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

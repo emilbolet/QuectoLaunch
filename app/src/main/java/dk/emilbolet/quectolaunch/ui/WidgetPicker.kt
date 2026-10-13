@@ -2,6 +2,7 @@ package dk.emilbolet.quectolaunch.ui
 
 import android.appwidget.AppWidgetProviderInfo
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,11 +29,13 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.BuiltInWidget
 import dk.emilbolet.quectolaunch.data.WidgetChoice
 import dk.emilbolet.quectolaunch.data.WidgetGroup
 import dk.emilbolet.quectolaunch.data.WidgetHost
@@ -40,7 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Every installed widget, grouped by app. Tapping one adds it to the home page you came
+ * The launcher's own widgets (clock, search bar), then every installed widget, grouped by app. Tapping one adds it to the home page you came
  * from (or the next page with room). Opened from the long-press menu on empty home space.
  */
 @Composable
@@ -49,7 +52,10 @@ fun WidgetPicker(
     widgetHost: WidgetHost,
     /** Size in cells the widget would get, for the "4 × 2" hint. */
     spanOf: (AppWidgetProviderInfo) -> Pair<Int, Int>,
+    /** Home grid columns: the launcher's own widgets start a full row wide. */
+    columns: Int,
     onPick: (AppWidgetProviderInfo) -> Unit,
+    onPickBuiltIn: (BuiltInWidget) -> Unit,
     onClose: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
@@ -72,14 +78,13 @@ fun WidgetPicker(
             }
 
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+                item(key = "built-in", contentType = "header") { GroupHeader(stringResource(R.string.app_name)) }
+                items(BuiltInWidget.entries, key = { "built-in:${it.key}" }, contentType = { "built-in" }) { widget ->
+                    BuiltInRow(widget, columns) { onPickBuiltIn(widget) }
+                }
                 groups.forEach { group ->
                     item(key = "app:${group.appLabel}", contentType = "header") {
-                        Text(
-                            text = group.appLabel,
-                            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                        GroupHeader(group.appLabel)
                     }
                     items(
                         group.widgets,
@@ -90,6 +95,48 @@ fun WidgetPicker(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GroupHeader(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+/** One of the launcher's own widgets, with the real thing in miniature as its preview. */
+@Composable
+private fun BuiltInRow(widget: BuiltInWidget, columns: Int, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .padding(horizontal = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Dark behind it, like a wallpaper: the clock is white
+        BuiltInWidgetContent(
+            widget = widget,
+            modifier = Modifier
+                .size(width = 112.dp, height = 72.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF2B3040))
+                .padding(4.dp),
+        )
+        Column(Modifier.padding(start = 16.dp)) {
+            Text(text = builtInWidgetLabel(widget), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(R.string.widget_size, columns, 1),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

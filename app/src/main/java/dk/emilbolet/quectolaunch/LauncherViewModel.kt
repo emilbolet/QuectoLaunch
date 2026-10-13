@@ -13,6 +13,7 @@ import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppInfo
 import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.AppSection
+import dk.emilbolet.quectolaunch.data.BuiltInWidget
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.DropTarget
 import dk.emilbolet.quectolaunch.data.FolderEntry
@@ -36,6 +37,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.scan
@@ -74,8 +79,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** The home grid and dock; items whose app is missing or disabled are left out. */
     val layout: StateFlow<HomeLayout> =
-        combine(homeDao.observe(), homeDao.observeStoredPages(), _sections) { items, pages, sections ->
-            buildLayout(items, pages ?: 1, sections)
+        flow {
+            // First run after the clock and search bar became widgets (or first run ever)
+            val grid = settings.filterNotNull().first()
+            homeDao.placeBuiltIns(grid.columns, grid.rows)
+            emitAll(
+                combine(homeDao.observe(), homeDao.observeStoredPages(), _sections) { items, pages, sections ->
+                    buildLayout(items, pages ?: 1, sections)
+                }
+            )
         }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, HomeLayout())
@@ -173,7 +185,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         fun entries(items: List<HomeItem>): Map<Int, HomeEntry> =
             items.mapNotNull { item ->
                 when {
-                    item.isWidget -> widgets.info(item.appWidgetId!!)?.let { info ->
+                    item.builtIn != null -> BuiltInWidget.entries.firstOrNull { it.key == item.builtIn }
+                        ?.let { WidgetEntry(item.id, item.position, null, item.spanX, item.spanY, null, it) }
+                    item.appWidgetId != null -> widgets.info(item.appWidgetId)?.let { info ->
                         WidgetEntry(item.id, item.position, item.appWidgetId, item.spanX, item.spanY, info)
                     }
                     item.isFolder -> {
@@ -293,6 +307,24 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /** Adds the launcher's own clock or search bar: a full row, from the current page on. */
+    fun addBuiltIn(widget: BuiltInWidget, startPage: Int) {
+        val grid = settings.value ?: return
+        viewModelScope.launch {
+            val page = homeDao.placeWidget(
+                appWidgetId = null,
+                provider = null,
+                startPage = startPage,
+                columns = grid.columns,
+                rows = grid.rows,
+                spanX = grid.columns,
+                spanY = 1,
+                builtIn = widget.key,
+            )
+            showPage(page)
+        }
+    }
+
     /** The user backed out of the permission or setup screen. */
     fun cancelPendingWidget() {
         pendingWidget?.let { widgets.deleteId(it.appWidgetId) }
@@ -337,7 +369,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun remove(entry: HomeEntry) {
         viewModelScope.launch {
             homeDao.remove(entry.id)
-            if (entry is WidgetEntry) widgets.deleteId(entry.appWidgetId)
+            (entry as? WidgetEntry)?.appWidgetId?.let(widgets::deleteId)
         }
     }
 

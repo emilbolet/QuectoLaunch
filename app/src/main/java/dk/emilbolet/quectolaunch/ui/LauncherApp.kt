@@ -162,6 +162,11 @@ fun LauncherApp(
                 groups = groups,
                 widgetHost = viewModel.widgets,
                 spanOf = spanOf,
+                columns = settings.columns,
+                onPickBuiltIn = { widget ->
+                    viewModel.closeWidgetPicker()
+                    viewModel.addBuiltIn(widget, dragState.gridPage)
+                },
                 onPick = { info ->
                     val (spanX, spanY) = spanOf(info)
                     viewModel.closeWidgetPicker()

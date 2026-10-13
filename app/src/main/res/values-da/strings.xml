@@ -51,6 +51,8 @@
     <string name="gesture_service_description">Lader dig låse telefonen ved at dobbelttrykke på startskærmen og åbne notifikationer ved at stryge ned. QuectoLaunch læser ikke, hvad der står på din skærm, og indsamler ingen data.</string>
     <string name="widgets">Widgets</string>
     <string name="resize">Tilpas størrelse</string>
+    <string name="widget_clock">Ur</string>
+    <string name="widget_search">Søgefelt</string>
     <string name="home_screens">Startskærme</string>
     <string name="home_screens_hint">Tryk på en skærm for at gå til den. Hold og træk for at ændre rækkefølgen.</string>
     <string name="home_screen_number">Startskærm %1$d</string>

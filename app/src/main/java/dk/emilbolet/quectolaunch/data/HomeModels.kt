@@ -33,14 +33,24 @@ data class FolderEntry(
     val apps: List<AppEntry>,
 ) : HomeEntry
 
-/** A widget on a home page. [position] is its top-left cell; it covers [spanX] × [spanY] cells. */
+/** The widgets the launcher draws itself; [key] is what is saved. */
+enum class BuiltInWidget(val key: String) {
+    Clock("clock"),
+    Search("search"),
+}
+
+/**
+ * A widget on a home page. [position] is its top-left cell; it covers [spanX] × [spanY] cells.
+ * An Android widget has [appWidgetId] and [info]; one of the launcher's own has [builtIn].
+ */
 data class WidgetEntry(
     override val id: Long,
     override val position: Int,
-    val appWidgetId: Int,
+    val appWidgetId: Int?,
     val spanX: Int,
     val spanY: Int,
-    val info: AppWidgetProviderInfo,
+    val info: AppWidgetProviderInfo?,
+    val builtIn: BuiltInWidget? = null,
 ) : HomeEntry {
     val row: Int get() = position / CELL_STRIDE
     val column: Int get() = position % CELL_STRIDE
@@ -58,7 +68,10 @@ data class HomeLayout(
     val pages: List<Map<Int, HomeEntry>> = listOf(emptyMap()),
     val dock: Map<Int, HomeEntry> = emptyMap(),
 ) {
-    val isEmpty: Boolean get() = pages.all { it.isEmpty() } && dock.isEmpty()
+    /** Nothing pinned yet; the clock and search bar every new layout starts with don't count. */
+    val isEmpty: Boolean
+        get() = dock.isEmpty() &&
+            pages.all { page -> page.values.all { it is WidgetEntry && it.builtIn != null } }
 
     fun folder(id: Long): FolderEntry? =
         (pages.asSequence().flatMap { it.values } + dock.values.asSequence())

@@ -7,8 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import android.text.format.DateFormat
-import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -24,7 +22,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,14 +30,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -55,7 +50,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,10 +79,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppRepository
@@ -103,7 +94,6 @@ import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.WidgetEntry
 import dk.emilbolet.quectolaunch.data.WidgetHost
 import dk.emilbolet.quectolaunch.data.cellPosition
-import java.util.Date
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -114,14 +104,15 @@ private val DefaultIconSize = 52.dp
 private const val PAGE_TURN_HOLD_MS = 600L
 
 /** Soft shadow so white text stays readable on any wallpaper. */
-private val TextShadow = Shadow(
+internal val TextShadow = Shadow(
     color = Color.Black.copy(alpha = 0.45f),
     offset = Offset(0f, 2f),
     blurRadius = 8f,
 )
 
 /**
- * Wallpaper, clock, the pages of pinned apps (swipe sideways), a search bar and the dock.
+ * Wallpaper, the pages of pinned apps and widgets (swipe sideways) and the dock. The clock
+ * and the search bar are widgets on the grid.
  * A swipe up that starts on the dock expands the dock; anywhere else it opens the drawer.
  * With gestures turned on in settings, a swipe down opens notifications and a double-tap
  * on empty space locks the phone.
@@ -278,13 +269,7 @@ fun HomeScreen(
               .padding(bottom = DockRowHeight + 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
       ) {
-        Column(
-            Modifier.padding(top = 24.dp, bottom = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Clock()
-            DefaultHomeButton()
-        }
+        DefaultHomeButton()
 
         BoxWithConstraints(
             Modifier
@@ -327,6 +312,7 @@ fun HomeScreen(
                         widgetHost = widgetHost,
                         dragState = dragState,
                         resizingId = resizingId,
+                        onSearch = { onOpenDrawer(true) },
                         onResizingChange = { resizingId = it },
                         onResize = onResizeWidget,
                         onRemove = onRemove,
@@ -357,8 +343,6 @@ fun HomeScreen(
                 .clickable { onOpenDrawer(false) }
                 .padding(horizontal = 24.dp, vertical = 2.dp),
         )
-
-        SearchBar(onClick = { onOpenDrawer(true) })
 
       }
 
@@ -559,72 +543,6 @@ fun EntryCell(
     }
 }
 
-/** Opens the drawer with the keyboard up, ready to type. */
-@Composable
-private fun SearchBar(onClick: () -> Unit) {
-    Row(
-        Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Default.Search,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = stringResource(R.string.search_apps),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
-@Composable
-private fun Clock() {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-
-    // Tick once a minute while visible; restarts on resume so it's right after the screen wakes
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                now = System.currentTimeMillis()
-                delay(60_000 - now % 60_000)
-            }
-        }
-    }
-
-    // Respects the phone's 12/24-hour setting and language
-    val time = remember(now) { DateFormat.getTimeFormat(context).format(Date(now)) }
-    val date = remember(now) {
-        DateUtils.formatDateTime(
-            context,
-            now,
-            DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_NO_YEAR,
-        )
-    }
-
-    Text(
-        text = time,
-        color = Color.White,
-        style = MaterialTheme.typography.displayLarge.copy(shadow = TextShadow),
-    )
-    Text(
-        text = date,
-        color = Color.White,
-        style = MaterialTheme.typography.titleMedium.copy(shadow = TextShadow),
-    )
-}
-
 /** Shows a "Set as default" button until the user picks this app as their home screen. */
 @Composable
 private fun DefaultHomeButton() {
@@ -643,8 +561,10 @@ private fun DefaultHomeButton() {
     }
 
     if (!isDefault) {
-        Spacer(Modifier.height(24.dp))
-        FilledTonalButton(onClick = { requestDefaultHome(context) { roleRequest.launch(it) } }) {
+        FilledTonalButton(
+            onClick = { requestDefaultHome(context) { roleRequest.launch(it) } },
+            modifier = Modifier.padding(vertical = 8.dp),
+        ) {
             Text(stringResource(R.string.set_default))
         }
     }
