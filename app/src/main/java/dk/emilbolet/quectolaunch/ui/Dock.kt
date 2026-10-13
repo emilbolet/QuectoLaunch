@@ -3,33 +3,23 @@
 package dk.emilbolet.quectolaunch.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -38,24 +28,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.DOCK_ROWS
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
-import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.cellPosition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,7 +48,6 @@ typealias DockState = AnchoredDraggableState<DockValue>
 
 /** Height of one row of dock apps; also the height of the collapsed dock. */
 val DockRowHeight = 80.dp
-private val TogglesHeight = 96.dp
 
 /** How long a dragged icon has to hover over the collapsed dock before it opens. */
 private const val HOVER_TO_EXPAND_MS = 500L
@@ -76,7 +56,7 @@ private const val HOVER_TO_EXPAND_MS = 500L
 @Composable
 fun rememberDockState(): DockState {
     val hiddenPx = with(LocalDensity.current) {
-        (DockRowHeight * (DOCK_ROWS - 1) + TogglesHeight).toPx()
+        (DockRowHeight * (DOCK_ROWS - 1)).toPx()
     }
     return remember(hiddenPx) {
         AnchoredDraggableState(
@@ -98,7 +78,7 @@ val DockState.openFraction: Float
 
 /**
  * The swipe-up dock. Collapsed it shows one row of [slots] apps; swiping up on it reveals a second
- * row and the quick toggles. It grows upwards, so the first row stays on top.
+ * row. It grows upwards, so the first row stays on top.
  */
 @Composable
 fun Dock(
@@ -106,7 +86,6 @@ fun Dock(
     entries: Map<Int, HomeEntry>,
     slots: Int,
     dragState: DragState,
-    controls: SystemControls,
     modifier: Modifier = Modifier,
     cell: @Composable (HomeEntry?) -> Unit,
 ) {
@@ -168,92 +147,5 @@ fun Dock(
                 }
             }
         }
-        QuickToggles(controls)
-    }
-}
-
-@Composable
-private fun QuickToggles(controls: SystemControls) {
-    val torchOn by controls.torchOn.collectAsStateWithLifecycle()
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(TogglesHeight)
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val weight = Modifier.weight(1f)
-        torchOn?.let { on ->
-            Toggle(
-                icon = painterResource(R.drawable.ic_flashlight),
-                label = stringResource(R.string.flashlight),
-                active = on,
-                onClick = controls::toggleTorch,
-                modifier = weight,
-            )
-        }
-        Toggle(
-            icon = painterResource(R.drawable.ic_wifi),
-            label = stringResource(R.string.wifi),
-            onClick = controls::openWifi,
-            modifier = weight,
-        )
-        Toggle(
-            icon = painterResource(R.drawable.ic_bluetooth),
-            label = stringResource(R.string.bluetooth),
-            onClick = controls::openBluetooth,
-            modifier = weight,
-        )
-        Toggle(
-            icon = painterResource(R.drawable.ic_volume),
-            label = stringResource(R.string.sound),
-            onClick = controls::openSound,
-            modifier = weight,
-        )
-        Toggle(
-            icon = rememberVectorPainter(Icons.Default.Settings),
-            label = stringResource(R.string.settings),
-            onClick = controls::openSettings,
-            modifier = weight,
-        )
-    }
-}
-
-@Composable
-private fun Toggle(
-    icon: Painter,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    active: Boolean = false,
-) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            Modifier
-                .size(48.dp)
-                .background(
-                    if (active) colors.primary else colors.onSurface.copy(alpha = 0.1f),
-                    CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, tint = if (active) colors.onPrimary else colors.onSurface)
-        }
-        Text(
-            text = label,
-            modifier = Modifier.padding(top = 4.dp),
-            color = colors.onSurface,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }

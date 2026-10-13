@@ -13,11 +13,6 @@
     <string name="remove">Fjern</string>
     <string name="folder">Mappe</string>
     <string name="home_empty_hint">Stryg op for at se dine apps. Hold på en app, og træk den herhen for at fastgøre den.</string>
-    <string name="flashlight">Lommelygte</string>
-    <string name="wifi">Wi‑Fi</string>
-    <string name="bluetooth">Bluetooth</string>
-    <string name="sound">Lyd</string>
-    <string name="settings">Indstillinger</string>
     <string name="launcher_settings">Indstillinger for startskærm</string>
     <string name="back">Tilbage</string>
     <string name="theme">Tema</string>

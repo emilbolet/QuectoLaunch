@@ -364,7 +364,6 @@ fun HomeScreen(
             entries = layout.dock,
             slots = dockSlots,
             dragState = dragState,
-            controls = controls,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .systemBarsPadding()

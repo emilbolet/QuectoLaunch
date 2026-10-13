@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -61,7 +61,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
     Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, app list layout, icon pack, gestures) and SettingsStore (DataStore)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
-    SystemControls.kt      Quick toggles (flashlight, intents for the system panels) and the gesture actions
+    SystemControls.kt      The gesture actions and the way to the accessibility settings
   ui/
     LauncherApp.kt         Root: home, folder popup, drawer, drag overlay; root pointer input that follows drags
     HomeScreen.kt          Default-home button, grid, EntryCell (icon + label + menu), scrim behind the open dock
@@ -69,7 +69,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     Widgets.kt             WidgetLayer (Android and built-in widgets drawn over a page's cells), resize handles
     WidgetPicker.kt        The launcher's own widgets, then installed widgets by app (in-tree overlay)
     PageManager.kt         "Home screens" overview: page previews, drag to reorder, add, remove (in-tree overlay)
-    Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows and the quick toggles
+    Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, App info, Uninstall), MenuIcon
@@ -110,12 +110,11 @@ Patterns to keep:
 
 ## What step 3 does (keep this working)
 
-- The dock is a bottom sheet (`AnchoredDraggableState<DockValue>`, created in `LauncherApp`). Collapsed: one row of apps (5 by default). Expanded: it grows upwards to show a second row and the quick toggles, turns solid, and dims the rest of the screen.
+- The dock is a bottom sheet (`AnchoredDraggableState<DockValue>`, created in `LauncherApp`). Collapsed: one row of apps (5 by default). Expanded: it grows upwards to show a second row, turns solid, and dims the rest of the screen.
 - Gesture rule: a swipe up that starts on the dock expands it (the dock's `anchoredDraggable` consumes the drag); a swipe up anywhere else opens the drawer (`detectVerticalDragGestures` on the home screen).
 - The dock collapses on swipe down, tap outside, Back, Home and when returning from another app (`LauncherViewModel.homeResets`).
 - Dragging: holding an icon over the collapsed dock for 500 ms opens it so the second row can be reached. `DragState.dockRowBounds` holds the visible part of each row; the open dock is checked before the grid it covers.
-- Toggles: Flashlight switches directly and shows its state (hidden if the phone has no flash); Wi‑Fi and Sound open the system panels; Bluetooth and Settings open settings screens. No permissions are needed for any of this.
-- Not done: brightness slider (needs `WRITE_SETTINGS`), on/off state for Wi‑Fi and Bluetooth (needs extra permissions).
+- The expanded dock used to have quick toggles under the second row (flashlight, Wi‑Fi, Bluetooth, sound, settings). The owner had them removed on 2026-10-13; don't bring them back unasked.
 
 ## What step 4 does (keep this working)
 
@@ -216,11 +215,10 @@ Patterns to keep:
 Nothing here is started; ask the owner before picking one.
 
 - Reordering apps inside a folder.
-- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions, editable quick toggles.
+- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming or re-iconing a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
 - A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
 - Clock widget: opening the clock app on tap, a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
-- Brightness slider in the dock (needs `WRITE_SETTINGS`); on/off state for the Wi‑Fi and Bluetooth toggles (needs permissions).
 - Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
 - A free-form accent color picker instead of presets.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.

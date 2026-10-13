@@ -248,10 +248,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         if (toFirstPage) showPage(0)
     }
 
-    override fun onCleared() {
-        controls.close()
-    }
-
     fun showPage(page: Int) {
         pageRequest = PageRequest(page, pageRequest.serial + 1)
     }
