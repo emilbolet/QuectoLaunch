@@ -2,6 +2,11 @@
 
 A small Android home-screen app: a simplified take on the Microsoft Launcher layout, with its own name and design.
 
+> [!WARNING]
+> **This project is vibe coded.** All of the code was written by an AI (Claude Code), directed by the owner in plain-language conversation. No human has reviewed the code line by line.
+>
+> It has only been run on an Android emulator, in English, and never on a real phone. There are no automated tests. Treat it as a personal experiment: read the code before you rely on it, and use it at your own risk.
+
 ## What it does
 
 - **Home screen:** your wallpaper, a clock and date, a grid of pinned apps, a search bar and a dock.
@@ -29,6 +34,6 @@ From a terminal: `./gradlew installDebug` (see `CLAUDE.md` for the Java and SDK 
 
 ## For developers
 
-`CLAUDE.md` describes the architecture, the patterns to keep, and what each feature is expected to do.
+`CLAUDE.md` describes the architecture, the patterns to keep, and what each feature is expected to do. It is also the instruction file the AI works from, so it shows how the project was built.
 
 The application ID and code package are `dk.emilbolet.quectolaunch`.
