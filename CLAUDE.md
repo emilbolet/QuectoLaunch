@@ -231,8 +231,8 @@ Nothing here is started; ask the owner before picking one.
 
 - `.github/workflows/build.yml`: every push to `main` and every pull request runs `assembleDebug lint`. A pushed tag `v<versionName>` also builds the release APK, signs it and publishes it as a GitHub release named `QuectoLaunch-<versionName>.apk`, with `fastlane/.../en-US/changelogs/<versionCode>.txt` as the notes. The tag must equal `v` + `versionName` or the job fails.
 - The APK is signed in the workflow with `apksigner`, not by Gradle, so `app/build.gradle.kts` has no signing settings and F-Droid builds the same unsigned APK. Keep it that way.
-- The key comes from four repository secrets (`SIGNING_KEYSTORE_BASE64`, `SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`). On 2026-10-13 the owner chose to create the key and set the secrets themselves; until then a tag push fails at "Check that the signing key is set up". Never create or store a signing key in the repo.
-- CI uses Temurin JDK 25, the same major version as the Android Studio JDK the project has always been built with (the owner preferred that over trying 21). As of 2026-10-13 the workflow has never run (nothing with it has been pushed); only its signing commands were tried locally with a throwaway key.
+- The key comes from four repository secrets (`SIGNING_KEYSTORE_BASE64`, `SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`), set on 2026-10-13. The key itself is on the owner's machine, outside the repo; its certificate SHA-256 is `4cbe52cb…d973e65f` (CN=Emil Bolet). Never put a signing key or its password in the repo, and never replace the key: updates only install over a release signed with the same one.
+- CI uses Temurin JDK 25, the same major version as the Android Studio JDK the project has always been built with (the owner preferred that over trying 21). Release 0.1 (tag `v0.1`, commit `5ff086e`) was published this way on 2026-10-13. GitHub warns that `checkout@v4`, `setup-java@v4` and `setup-gradle@v4` are due for their next major versions.
 - A GitHub-signed APK and an F-Droid-signed one can't update each other: a user has to stay with one source.
 
 ### Getting it into F-Droid
@@ -245,7 +245,7 @@ The owner wants to submit the app to F-Droid. Done in the repo on 2026-10-13:
 - `fdroid/dk.emilbolet.quectolaunch.yml` is a draft of the build recipe for the `fdroiddata` merge request. It has not been through `fdroid lint` or `fdroid build`.
 - `./gradlew assembleRelease` works (unsigned APK) and the result runs on the emulator; lint has no errors.
 
-Still open, and the owner's to do or decide: make the GitHub repo public, push, tag the release `v0.1` (tags must match `versionName`), put the tag's commit hash in the recipe, and open the merge request on GitLab. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
+Still open, and the owner's to do or decide: make the GitHub repo public (it is private) and open the merge request on GitLab. `main` is pushed and `v0.1` is tagged; the recipe has that commit's hash. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
 
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.

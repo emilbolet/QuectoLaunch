@@ -2,8 +2,7 @@
 # copy it to metadata/dk.emilbolet.quectolaunch.yml in a fork of
 # https://gitlab.com/fdroid/fdroiddata and open a merge request there.
 #
-# Before that: make the GitHub repository public, tag the release commit v0.1,
-# and replace the commit below with that commit's full hash.
+# Before that: make the GitHub repository public. The commit below is tag v0.1.
 # Not yet run through "fdroid lint" or "fdroid build".
 Categories:
   - System
@@ -20,7 +19,7 @@ Repo: https://github.com/emilbolet/QuectoLaunch.git
 Builds:
   - versionName: '0.1'
     versionCode: 1
-    commit: REPLACE_WITH_FULL_HASH_OF_TAG_v0.1
+    commit: 5ff086e94dbef8de9dc12a831f0d57322fe122f7
     subdir: app
     gradle:
       - yes
