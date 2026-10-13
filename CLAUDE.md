@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. After release 0.1 (not yet released): a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). After that, not yet released: the transparency setting. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -59,7 +59,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     IconPack.kt            Parses an icon pack's appfilter.xml: icons per app, calendar and clock icons, styling for apps it doesn't cover
     HomeDatabase.kt        Room: HomeItem and HomeMeta (page count) entities, HomeDao (drop/remove/folder/widget/page rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
-    Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size and labels, app list layout, icon pack, gestures) and SettingsStore (DataStore)
+    Settings.kt            LauncherSettings (theme mode, accent, transparency, grid size, dock size and labels, app list layout, icon pack, gestures) and SettingsStore (DataStore)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
     SystemControls.kt      The gesture actions and the way to the accessibility settings
   ui/
@@ -77,6 +77,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
     AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
+    Panels.kt              Transparency of the panels (app list, dock, folder, menus, search bar): colors, text color, LauncherMenu
     theme/Theme.kt         Material 3; wallpaper colors on Android 12+ or a scheme built from the accent color
 ```
 
@@ -218,6 +219,16 @@ Patterns to keep:
   - Each half is safe to repeat and they don't depend on each other's success, because one is in DataStore and the other in Room.
 - `HomeLayout.isEmpty` ignores built-in widgets, so the "swipe up for your apps" hint still shows on a new installation.
 - Known differences from before: icons sit a little higher than they did (the clock's row is lower than its old area, the search bar's row is higher); the chevron is below the search bar instead of above it; pages other than the first have two empty rows where the clock and search bar used to show.
+
+## Transparency (keep this working)
+
+- Settings → "Transparency", 0–100 % in steps of 5, default 0 %. Saved as `LauncherSettings.panelOpacity` (1 − transparency) and provided as `LocalPanelOpacity`.
+- It applies to the "panels": the app list's background, the dock (closed and open), the folder popup, the long-press menus and the search bar widget. At 0 % everything looks as it did before the setting existed. Settings, the widget list, the Home screens overview and the icon picker stay solid.
+- A panel background goes through `panelColor(...)`. A new panel should too, and a new long-press menu must be a `LauncherMenu`, not a bare `DropdownMenu`.
+- What must not show through a see-through panel is hidden instead: the home screen fades out while the app list is open (always) or a folder is open (when transparency is above 0), and the grid fades as the dock opens, by as much as the dock lets through. Sticky letter headings in the app list become ordinary ones, because a see-through heading would have apps scrolling visibly under it.
+- Menus never go below 75 % solid (`MIN_MENU_OPACITY`): they open on top of icons, which made their text unreadable below that.
+- Text color: `panelsNeedLightText` mixes the wallpaper's main color (`WallpaperManager.getWallpaperColors`, no permission needed) with the theme's surface color at the current opacity. If the mix is dark, text on panels turns white with the home screen's shadow (`panelsSeeThrough`, `panelContentColor()`, `TextStyle.onPanel()`); otherwise it keeps the theme's color. A wallpaper that is half light and half dark is judged by its main color only.
+- Not done: blurring what is behind a panel (Microsoft Launcher does; Android 12+ can blur behind a window), a slider per panel.
 
 ## Ideas and leftovers
 

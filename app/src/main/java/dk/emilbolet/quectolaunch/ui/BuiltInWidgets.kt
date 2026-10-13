@@ -130,7 +130,7 @@ private fun SearchWidget(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(height)
                 .clip(RoundedCornerShape(height / 2))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
+                .background(panelColor(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)))
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

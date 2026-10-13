@@ -4,6 +4,7 @@ import android.app.Activity
 import android.appwidget.AppWidgetProviderInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -19,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -83,7 +85,19 @@ fun LauncherApp(
         }
     }
 
-    CompositionLocalProvider(LocalChangeIcon provides viewModel::openIconPicker) {
+    // With a see-through app list or folder the home screen must not show behind it, only
+    // the wallpaper
+    val seeThrough = settings.panelOpacity < 1f
+    val homeAlpha by animateFloatAsState(
+        targetValue = if (drawerOpen || (seeThrough && openFolder != null)) 0f else 1f,
+        label = "home",
+    )
+
+    CompositionLocalProvider(
+        LocalChangeIcon provides viewModel::openIconPicker,
+        LocalPanelOpacity provides settings.panelOpacity,
+        LocalPanelLightText provides panelsNeedLightText(settings.panelOpacity),
+    ) {
     Box(
         Modifier
             .fillMaxSize()
@@ -101,6 +115,7 @@ fun LauncherApp(
                 }
             }
     ) {
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = homeAlpha }) {
         HomeScreen(
             layout = layout,
             columns = settings.columns,
@@ -122,6 +137,7 @@ fun LauncherApp(
             onOpenPages = viewModel::openPageManager,
             onOpenSettings = viewModel::openSettings,
         )
+        }
 
         if (openFolder != null) {
             FolderPopup(

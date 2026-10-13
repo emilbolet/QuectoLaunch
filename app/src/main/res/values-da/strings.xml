@@ -35,6 +35,9 @@
     <string name="drawer_layout_grid">Gitter</string>
     <string name="drawer_layout_list">Liste</string>
     <string name="drawer_layout_note">Gitteret har lige så mange kolonner som startskærmen.</string>
+    <string name="transparency">Gennemsigtighed</string>
+    <string name="transparency_note">Hvor meget af baggrunden der kan ses gennem applisten, docken, mapper, menuer og søgefeltet. Menuer forbliver altid delvist dækkende, så de kan læses.</string>
+    <string name="percent">%1$d %%</string>
     <string name="icon_pack">Ikonpakke</string>
     <string name="change_icon">Skift ikon</string>
     <string name="change_icon_title">Ikon til %1$s</string>

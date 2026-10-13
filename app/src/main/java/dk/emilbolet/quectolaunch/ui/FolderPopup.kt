@@ -75,7 +75,7 @@ fun FolderPopup(
                 // Taps on the card itself shouldn't close the folder
                 .clickable(interactionSource = noRipple, indication = null, onClick = {}),
             shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = panelColor(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             Column(Modifier.padding(16.dp)) {
                 FolderTitle(folder, onRename)
@@ -95,7 +95,7 @@ fun FolderPopup(
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(vertical = 8.dp),
-                                    onWallpaper = false,
+                                    onWallpaper = panelsSeeThrough,
                                 )
                             }
                             repeat(FOLDER_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
@@ -112,8 +112,8 @@ private fun FolderTitle(folder: FolderEntry, onRename: (String) -> Unit) {
     val focusManager = LocalFocusManager.current
     // Kept locally while typing, so saving in the background can't move the cursor
     var title by remember(folder.id) { mutableStateOf(folder.title.orEmpty()) }
-    val style = MaterialTheme.typography.titleLarge.copy(
-        color = MaterialTheme.colorScheme.onSurface,
+    val style = MaterialTheme.typography.titleLarge.onPanel().copy(
+        color = panelContentColor(),
         textAlign = TextAlign.Center,
     )
 

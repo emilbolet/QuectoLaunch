@@ -61,8 +61,9 @@ import dk.emilbolet.quectolaunch.data.LauncherSettings
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.ThemeMode
 import dk.emilbolet.quectolaunch.ui.theme.wallpaperColorsAvailable
+import kotlin.math.roundToInt
 
-/** Theme, accent color, icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
+/** Theme, accent color, transparency, icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
@@ -180,6 +181,36 @@ fun SettingsScreen(
                 if (customOpen && custom != null) {
                     AccentSliders(color = custom, onChange = { onChange(settings.copy(accent = it)) })
                 }
+            }
+
+            Section(stringResource(R.string.transparency)) {
+                // Kept here while dragging; the saved value follows
+                var transparency by remember { mutableFloatStateOf(1f - settings.panelOpacity) }
+                val label = stringResource(R.string.transparency)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Slider(
+                        value = transparency,
+                        onValueChange = {
+                            transparency = it
+                            onChange(settings.copy(panelOpacity = 1f - it))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { contentDescription = label },
+                        // Steps of 5 %
+                        steps = 19,
+                    )
+                    Text(
+                        text = stringResource(R.string.percent, (transparency * 100).roundToInt()),
+                        modifier = Modifier.padding(start = 12.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.transparency_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             Section(stringResource(R.string.icon_pack)) {

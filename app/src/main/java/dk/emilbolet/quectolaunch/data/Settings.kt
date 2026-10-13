@@ -3,6 +3,7 @@ package dk.emilbolet.quectolaunch.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -26,6 +27,11 @@ data class LauncherSettings(
     val rows: Int = 7,
     /** Icons in each of the dock's rows. */
     val dockSlots: Int = 5,
+    /**
+     * How solid the app list, dock, folders, menus and search bar are: 1 as the theme draws
+     * them, 0 only the wallpaper. Shown in settings the other way round, as "Transparency".
+     */
+    val panelOpacity: Float = 1f,
     /** App names under the dock's icons. */
     val dockLabels: Boolean = false,
     val drawerLayout: DrawerLayout = DrawerLayout.Grid,
@@ -69,6 +75,7 @@ class SettingsStore(private val context: Context) {
     private val rowsKey = intPreferencesKey("rows")
     private val dockSlotsKey = intPreferencesKey("dock_slots")
     private val dockLabelsKey = booleanPreferencesKey("dock_labels")
+    private val panelOpacityKey = floatPreferencesKey("panel_opacity")
     private val drawerLayoutKey = stringPreferencesKey("drawer_layout")
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
@@ -105,6 +112,7 @@ class SettingsStore(private val context: Context) {
             dockSlots = (prefs[dockSlotsKey] ?: defaults.dockSlots)
                 .coerceIn(LauncherSettings.DOCK_SLOT_CHOICES),
             dockLabels = prefs[dockLabelsKey] ?: defaults.dockLabels,
+            panelOpacity = (prefs[panelOpacityKey] ?: defaults.panelOpacity).coerceIn(0f, 1f),
             drawerLayout = DrawerLayout.entries.firstOrNull { it.name == prefs[drawerLayoutKey] }
                 ?: defaults.drawerLayout,
             iconPack = prefs[iconPackKey],
@@ -143,6 +151,7 @@ class SettingsStore(private val context: Context) {
             prefs[rowsKey] = settings.rows
             prefs[dockSlotsKey] = settings.dockSlots
             prefs[dockLabelsKey] = settings.dockLabels
+            prefs[panelOpacityKey] = settings.panelOpacity
             prefs[drawerLayoutKey] = settings.drawerLayout.name
             prefs[gesturesKey] = settings.gestures
             if (settings.iconPack != null) prefs[iconPackKey] = settings.iconPack else prefs.remove(iconPackKey)

@@ -106,8 +106,8 @@ fun Dock(
         }
     }
 
-    val collapsedColor = Color.White.copy(alpha = 0.2f)
-    val expandedColor = MaterialTheme.colorScheme.surfaceContainer
+    val collapsedColor = panelColor(Color.White.copy(alpha = 0.2f))
+    val expandedColor = panelColor(MaterialTheme.colorScheme.surfaceContainer)
     val handleColor = MaterialTheme.colorScheme.onSurfaceVariant
     val rowHeight = dockRowHeight(labels)
 

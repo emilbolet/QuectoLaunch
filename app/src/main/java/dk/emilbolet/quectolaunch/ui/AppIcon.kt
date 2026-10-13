@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -110,7 +109,7 @@ fun AppMenu(
     onDismiss: () -> Unit,
     onRemove: (() -> Unit)? = null,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+    LauncherMenu(expanded = expanded, onDismissRequest = onDismiss) {
         val shortcuts by produceState(emptyList<AppShortcut>(), app.key) {
             value = withContext(Dispatchers.IO) { repository.shortcuts(app) }
         }

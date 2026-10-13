@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -177,7 +176,7 @@ private fun WidgetCell(
             )
         }
 
-        DropdownMenu(
+        LauncherMenu(
             expanded = dragState.menuKey == widget.id,
             onDismissRequest = dragState::closeMenu,
         ) {

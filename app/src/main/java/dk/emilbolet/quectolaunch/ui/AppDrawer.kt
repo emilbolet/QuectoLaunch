@@ -118,8 +118,8 @@ fun AppDrawer(
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        color = panelColor(MaterialTheme.colorScheme.surface),
+        contentColor = panelContentColor(),
     ) {
         Column(
             Modifier
@@ -202,14 +202,24 @@ private fun BoxScope.AlphabeticalList(
     var touchedLetter by remember { mutableStateOf<String?>(null) }
     var bubbleLetter by remember { mutableStateOf("") }
 
+    val solid = LocalPanelOpacity.current >= 1f
+
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(end = ScrollerWidth, bottom = 16.dp),
     ) {
         sections.forEachIndexed { i, section ->
-            stickyHeader(key = "header:${section.letter}", contentType = "header") {
-                SectionHeader(section.letter)
+            // A sticky heading needs a solid background, or the apps show through it as they
+            // scroll past; on a see-through list the headings scroll along instead
+            if (solid) {
+                stickyHeader(key = "header:${section.letter}", contentType = "header") {
+                    SectionHeader(section.letter)
+                }
+            } else {
+                item(key = "header:${section.letter}", contentType = "header") {
+                    SectionHeader(section.letter)
+                }
             }
             if (layout == DrawerLayout.Grid) {
                 items(rows[i], key = { it.first().key }, contentType = { "row" }) { row ->
@@ -352,11 +362,11 @@ private fun SectionHeader(letter: String) {
         text = letter,
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(if (LocalPanelOpacity.current >= 1f) MaterialTheme.colorScheme.surface else Color.Transparent)
             .padding(start = 20.dp, top = 12.dp, bottom = 4.dp),
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.titleSmall.onPanel(),
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        color = if (panelsSeeThrough) Color.White else MaterialTheme.colorScheme.primary,
     )
 }
 
@@ -381,7 +391,7 @@ private fun AppRow(app: AppInfo, repository: AppRepository, dragState: DragState
             Spacer(Modifier.width(16.dp))
             Text(
                 text = app.label,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.onPanel(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -425,7 +435,7 @@ private fun AppCell(app: AppInfo, repository: AppRepository, dragState: DragStat
             Text(
                 text = app.label,
                 modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelMedium.onPanel(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -467,7 +477,7 @@ private fun WebSearchRow(query: String, onClick: () -> Unit) {
         Spacer(Modifier.width(16.dp))
         Text(
             text = stringResource(R.string.search_web, query),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.onPanel(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

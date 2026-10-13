@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -64,6 +63,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
@@ -276,9 +276,13 @@ fun HomeScreen(
           (maxWidth - 16.dp) / dockSlots - 14.dp,
       ).coerceAtLeast(32.dp)
 
+      val panelOpacity = LocalPanelOpacity.current
       Column(
           // Leaves room for the collapsed dock, which is drawn on top below
           Modifier
+              // A see-through dock opens over the grid: the grid fades as far as the dock
+              // lets it show, so icons and labels don't mix with the dock's own
+              .graphicsLayer { alpha = 1f - dockState.openFraction * (1f - panelOpacity) }
               .systemBarsPadding()
               .padding(bottom = dockRowHeight(dockLabels) + 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -385,12 +389,17 @@ fun HomeScreen(
                 .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         ) { entry ->
             // The open dock is solid, so its labels take the theme's text color
-            Cell(entry, showLabel = dockLabels, iconSize = dockIconSize, onWallpaper = !dockSolid)
+            Cell(
+                entry = entry,
+                showLabel = dockLabels,
+                iconSize = dockIconSize,
+                onWallpaper = !dockSolid || panelsSeeThrough,
+            )
         }
 
         // Menu for a long-press on empty space, shown where the finger was
         Box(Modifier.offset { homeMenuAt?.round() ?: IntOffset.Zero }) {
-            DropdownMenu(expanded = homeMenuAt != null, onDismissRequest = { homeMenuAt = null }) {
+            LauncherMenu(expanded = homeMenuAt != null, onDismissRequest = { homeMenuAt = null }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.widgets)) },
                     leadingIcon = {
@@ -543,7 +552,7 @@ fun EntryCell(
                 onDismiss = dragState::closeMenu,
                 onRemove = onRemove,
             )
-            is FolderEntry -> DropdownMenu(expanded = menuOpen, onDismissRequest = dragState::closeMenu) {
+            is FolderEntry -> LauncherMenu(expanded = menuOpen, onDismissRequest = dragState::closeMenu) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.remove)) },
                     leadingIcon = { MenuIcon(Icons.Outlined.Close) },
