@@ -19,7 +19,7 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 - **Folders:** drop one app on another. Tap the folder to open it, tap its title to rename it.
 - **Long-press an app:** its shortcuts (while QuectoLaunch is your default home app), Remove, App info, Uninstall.
 - **Swipe-up dock:** swipe up on the dock for a second row of apps.
-- **Settings:** hold an empty spot on the home screen and choose Launcher settings. Light/dark theme, accent color, icon pack, grid size, icons per dock row, app names in the dock, app list layout, and gestures.
+- **Settings:** hold an empty spot on the home screen and choose Launcher settings. Light/dark theme, accent color (wallpaper colors, presets or your own), icon pack, grid size, icons per dock row, app names in the dock, app list layout, and gestures.
 - **Gestures (optional, off by default):** double-tap an empty spot to lock the phone, swipe down for notifications. These need Android's accessibility access, which the app explains before asking.
 
 ## Running it

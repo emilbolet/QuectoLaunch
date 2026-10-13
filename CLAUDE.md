@@ -122,6 +122,7 @@ Patterns to keep:
 - Long-press on empty home space shows a small menu: Widgets, Home screens, Launcher settings. The settings screen closes on Back or Home; changes apply and save immediately.
 - Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
 - Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
+- A color of one's own: the rainbow swatch (first in the row) opens two sliders, Color (hue) and Vividness (saturation). There is no lightness slider because `accentColorScheme` only uses the accent's hue and saturation. The sliders show whenever the saved accent is not one of the presets. Changes are saved while dragging, so the settings screen itself is the preview.
 - Grid size: 4–6 columns, 4–9 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
 - "Show app names in the dock" (`dockLabels`, off by default) puts a one-line label under each dock icon, in both rows. The icons are then at most 44 dp and the dock's rows are 92 dp high instead of 80 (`dockRowHeight`), which keeps 14 dp between the dock's edge and the icon above it or the name below it, the same as without names. (At 80 dp the icons sat 8 dp from the top and the centre icon touched the grab handle.) The labels are white over the wallpaper while the dock is closed and take the theme's text color once it is more than half open, because the open dock is solid.
 - Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
@@ -222,7 +223,6 @@ Nothing here is started; ask the owner before picking one.
 - Clock widget: opening the clock app on tap, a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
 - Icon packs: `iconback`/`iconmask`/`iconupon`/`scale` for unthemed apps, dynamic calendar/clock icons.
-- A free-form accent color picker instead of presets.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
 - Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
 - App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.

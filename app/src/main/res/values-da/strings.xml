@@ -22,6 +22,9 @@
     <string name="theme_dark">Mørkt</string>
     <string name="accent_color">Accentfarve</string>
     <string name="use_wallpaper_colors">Brug baggrundens farver</string>
+    <string name="accent_custom">Din egen farve</string>
+    <string name="accent_hue">Farve</string>
+    <string name="accent_vividness">Farvestyrke</string>
     <string name="accent_number">Farve %1$d</string>
     <string name="grid_columns">Kolonner på startskærmen</string>
     <string name="grid_rows">Rækker på startskærmen</string>

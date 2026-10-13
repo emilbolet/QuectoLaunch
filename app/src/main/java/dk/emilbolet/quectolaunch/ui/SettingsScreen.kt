@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -22,11 +23,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
@@ -35,18 +38,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.ColorUtils
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.DrawerLayout
 import dk.emilbolet.quectolaunch.data.IconPackInfo
@@ -105,6 +112,11 @@ fun SettingsScreen(
             }
 
             Section(stringResource(R.string.accent_color)) {
+                // Sliders for a color of one's own show once the rainbow swatch is tapped,
+                // and from the start if such a color is already in use
+                var customOpen by remember {
+                    mutableStateOf(settings.accent != null && settings.accent !in LauncherSettings.ACCENTS)
+                }
                 if (wallpaperColorsAvailable) {
                     val useWallpaper = settings.accent == null
                     Row(
@@ -115,6 +127,7 @@ fun SettingsScreen(
                                 role = Role.Switch,
                                 onValueChange = { on ->
                                     val accent = if (on) null else LauncherSettings.ACCENTS.first()
+                                    customOpen = false
                                     onChange(settings.copy(accent = accent))
                                 },
                             )
@@ -138,14 +151,34 @@ fun SettingsScreen(
                     // Before Android 12 there are no wallpaper colors, so the first one is the default
                     val current = settings.accent
                         ?: LauncherSettings.ACCENTS.first().takeUnless { wallpaperColorsAvailable }
+                    // First, so it isn't scrolled out of sight behind the presets
+                    Swatch(
+                        brush = Brush.sweepGradient(HueColors),
+                        name = stringResource(R.string.accent_custom),
+                        selected = customOpen,
+                        onClick = {
+                            customOpen = true
+                            // Starts from the color in use; leaves "wallpaper colors" if that was on
+                            if (settings.accent == null) {
+                                onChange(settings.copy(accent = LauncherSettings.ACCENTS.first()))
+                            }
+                        },
+                    )
                     LauncherSettings.ACCENTS.forEachIndexed { index, accent ->
                         Swatch(
                             color = Color(accent),
                             name = stringResource(R.string.accent_number, index + 1),
-                            selected = accent == current,
-                            onClick = { onChange(settings.copy(accent = accent)) },
+                            selected = accent == current && !customOpen,
+                            onClick = {
+                                customOpen = false
+                                onChange(settings.copy(accent = accent))
+                            },
                         )
                     }
+                }
+                val custom = settings.accent
+                if (customOpen && custom != null) {
+                    AccentSliders(color = custom, onChange = { onChange(settings.copy(accent = it)) })
                 }
             }
 
@@ -405,13 +438,88 @@ private fun <T> Choices(
     }
 }
 
+/** Red through the rainbow and back to red, for the hue slider and the "custom" swatch. */
+private val HueColors = (0..360 step 30).map { Color.hsl(it.toFloat(), 0.85f, 0.5f) }
+
+/**
+ * A color of one's own: its hue and how vivid it is. Lightness isn't offered because the
+ * theme sets that itself for each surface (see accentColorScheme).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Swatch(color: Color, name: String, selected: Boolean, onClick: () -> Unit) {
+private fun AccentSliders(color: Int, onChange: (Int) -> Unit) {
+    val hsl = remember(color) { FloatArray(3).also { ColorUtils.colorToHSL(color, it) } }
+    // Kept here while dragging: converting to RGB and back would make the sliders jitter
+    var hue by remember { mutableFloatStateOf(hsl[0]) }
+    var vividness by remember { mutableFloatStateOf(hsl[1].coerceIn(MIN_VIVIDNESS, 1f)) }
+
+    fun publish() = onChange(ColorUtils.HSLToColor(floatArrayOf(hue, vividness, 0.5f)))
+
+    val hueLabel = stringResource(R.string.accent_hue)
+    Text(
+        text = hueLabel,
+        modifier = Modifier.padding(top = 8.dp),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Slider(
+        value = hue,
+        onValueChange = {
+            hue = it
+            publish()
+        },
+        modifier = Modifier.semantics { contentDescription = hueLabel },
+        valueRange = 0f..359f,
+        track = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(CircleShape)
+                    .background(Brush.horizontalGradient(HueColors))
+            )
+        },
+    )
+
+    val vividnessLabel = stringResource(R.string.accent_vividness)
+    Text(text = vividnessLabel, style = MaterialTheme.typography.bodyMedium)
+    Slider(
+        value = vividness,
+        onValueChange = {
+            vividness = it
+            publish()
+        },
+        modifier = Modifier.semantics { contentDescription = vividnessLabel },
+        valueRange = MIN_VIVIDNESS..1f,
+        track = {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.hsl(hue, MIN_VIVIDNESS, 0.5f), Color.hsl(hue, 1f, 0.5f))
+                        )
+                    )
+            )
+        },
+    )
+}
+
+/** Below this a color is nearly grey and every hue looks the same. */
+private const val MIN_VIVIDNESS = 0.15f
+
+@Composable
+private fun Swatch(color: Color, name: String, selected: Boolean, onClick: () -> Unit) =
+    Swatch(SolidColor(color), name, selected, onClick)
+
+@Composable
+private fun Swatch(brush: Brush, name: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(color)
+            .background(brush)
             .then(
                 if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                 else Modifier

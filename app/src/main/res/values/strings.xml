@@ -23,6 +23,9 @@
     <string name="theme_dark">Dark</string>
     <string name="accent_color">Accent color</string>
     <string name="use_wallpaper_colors">Use wallpaper colors</string>
+    <string name="accent_custom">Your own color</string>
+    <string name="accent_hue">Color</string>
+    <string name="accent_vividness">Vividness</string>
     <string name="accent_number">Color %1$d</string>
     <string name="grid_columns">Home screen columns</string>
     <string name="grid_rows">Home screen rows</string>
