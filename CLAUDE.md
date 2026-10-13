@@ -111,6 +111,7 @@ Patterns to keep:
 ## What step 3 does (keep this working)
 
 - The dock is a bottom sheet (`AnchoredDraggableState<DockValue>`, created in `LauncherApp`). Collapsed: one row of apps (5 by default). Expanded: it grows upwards to show a second row, turns solid, and dims the rest of the screen.
+- Dock spacing, measured with 5 icons on a 411 dp wide screen: icons are 52 dp, 14 dp from the dock's top and bottom edge and 13 dp from its left and right edge, with 27 dp between icons. The dock's cells are exactly as wide as the home grid's, so dock icons line up with the grid columns above when both have the same count; insetting the dock's ends would break that.
 - Gesture rule: a swipe up that starts on the dock expands it (the dock's `anchoredDraggable` consumes the drag); a swipe up anywhere else opens the drawer (`detectVerticalDragGestures` on the home screen).
 - The dock collapses on swipe down, tap outside, Back, Home and when returning from another app (`LauncherViewModel.homeResets`).
 - Dragging: holding an icon over the collapsed dock for 500 ms opens it so the second row can be reached. `DragState.dockRowBounds` holds the visible part of each row; the open dock is checked before the grid it covers.
@@ -122,7 +123,7 @@ Patterns to keep:
 - Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
 - Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
 - Grid size: 4–6 columns, 4–9 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
-- "Show app names in the dock" (`dockLabels`, off by default) puts a one-line label under each dock icon, in both rows. The icons are then at most 44 dp so icon and label fit the 80 dp row. The labels are white over the wallpaper while the dock is closed and take the theme's text color once it is more than half open, because the open dock is solid.
+- "Show app names in the dock" (`dockLabels`, off by default) puts a one-line label under each dock icon, in both rows. The icons are then at most 44 dp and the dock's rows are 92 dp high instead of 80 (`dockRowHeight`), which keeps 14 dp between the dock's edge and the icon above it or the name below it, the same as without names. (At 80 dp the icons sat 8 dp from the top and the centre icon touched the grab handle.) The labels are white over the wallpaper while the dock is closed and take the theme's text color once it is more than half open, because the open dock is solid.
 - Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
 - Room is at schema version 6 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns; 4→5 added the `home_meta` table with the page count; 5→6 added `home_items.builtIn` and `home_meta.layoutVersion`). Add a migration for any further schema change.
 

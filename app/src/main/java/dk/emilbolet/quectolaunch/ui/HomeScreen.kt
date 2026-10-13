@@ -100,7 +100,7 @@ import kotlinx.coroutines.launch
 
 private val DefaultIconSize = 52.dp
 
-/** Leaves room for a line of text in a dock row. */
+/** A little smaller than on the grid, so the dock doesn't grow much when names are shown. */
 private val DockIconSizeWithLabel = 44.dp
 
 /** How long a dragged icon has to be held at the screen edge before the page turns. */
@@ -280,7 +280,7 @@ fun HomeScreen(
           // Leaves room for the collapsed dock, which is drawn on top below
           Modifier
               .systemBarsPadding()
-              .padding(bottom = DockRowHeight + 8.dp),
+              .padding(bottom = dockRowHeight(dockLabels) + 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         DefaultHomeButton()
@@ -377,6 +377,7 @@ fun HomeScreen(
             state = dockState,
             entries = layout.dock,
             slots = dockSlots,
+            labels = dockLabels,
             dragState = dragState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

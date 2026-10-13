@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.data.DOCK_ROWS
 import dk.emilbolet.quectolaunch.data.HomeEntry
@@ -46,17 +47,20 @@ enum class DockValue { Collapsed, Expanded }
 
 typealias DockState = AnchoredDraggableState<DockValue>
 
-/** Height of one row of dock apps; also the height of the collapsed dock. */
-val DockRowHeight = 80.dp
+/**
+ * Height of one row of dock apps; also the height of the collapsed dock. With app names the
+ * row is taller, so the icon keeps the same distance to the dock's edge as without them.
+ */
+fun dockRowHeight(labels: Boolean): Dp = if (labels) 92.dp else 80.dp
 
 /** How long a dragged icon has to hover over the collapsed dock before it opens. */
 private const val HOVER_TO_EXPAND_MS = 500L
 
 /** The dock's position is how many pixels are revealed below its first row. */
 @Composable
-fun rememberDockState(): DockState {
+fun rememberDockState(labels: Boolean): DockState {
     val hiddenPx = with(LocalDensity.current) {
-        (DockRowHeight * (DOCK_ROWS - 1)).toPx()
+        (dockRowHeight(labels) * (DOCK_ROWS - 1)).toPx()
     }
     return remember(hiddenPx) {
         AnchoredDraggableState(
@@ -85,6 +89,8 @@ fun Dock(
     state: DockState,
     entries: Map<Int, HomeEntry>,
     slots: Int,
+    /** Whether the cells show app names, which makes the rows taller. */
+    labels: Boolean,
     dragState: DragState,
     modifier: Modifier = Modifier,
     cell: @Composable (HomeEntry?) -> Unit,
@@ -103,6 +109,7 @@ fun Dock(
     val collapsedColor = Color.White.copy(alpha = 0.2f)
     val expandedColor = MaterialTheme.colorScheme.surfaceContainer
     val handleColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val rowHeight = dockRowHeight(labels)
 
     Column(
         modifier
@@ -118,7 +125,7 @@ fun Dock(
                 val handle = Size(32.dp.toPx(), 4.dp.toPx())
                 drawRoundRect(
                     color = handleColor.copy(alpha = 0.5f * progress),
-                    topLeft = Offset((size.width - handle.width) / 2, 6.dp.toPx()),
+                    topLeft = Offset((size.width - handle.width) / 2, 5.dp.toPx()),
                     size = handle,
                     cornerRadius = CornerRadius(handle.height / 2),
                 )
@@ -127,7 +134,7 @@ fun Dock(
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints.copy(maxHeight = Constraints.Infinity))
                 val revealed = if (state.offset.isNaN()) 0f else state.offset
-                val height = (DockRowHeight.toPx() + revealed).roundToInt()
+                val height = (rowHeight.toPx() + revealed).roundToInt()
                     .coerceIn(0, placeable.height)
                 layout(placeable.width, height) { placeable.place(0, 0) }
             }
@@ -136,7 +143,7 @@ fun Dock(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(DockRowHeight)
+                    .height(rowHeight)
                     .onGloballyPositioned { dragState.dockRowBounds[row] = it.boundsInRoot() }
             ) {
                 repeat(slots) { slot ->

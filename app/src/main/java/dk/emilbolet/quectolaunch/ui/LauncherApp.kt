@@ -39,7 +39,7 @@ fun LauncherApp(
     val drawerOpen = viewModel.drawerOpen
     val openFolder = viewModel.openFolderId?.let(layout::folder)
     val dragState = remember { DragState() }
-    val dockState = rememberDockState()
+    val dockState = rememberDockState(labels = settings.dockLabels)
     val scope = rememberCoroutineScope()
 
     // Home button, or coming back from another app: fold the dock away again
