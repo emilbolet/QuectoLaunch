@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.data.DOCK_ROWS
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
+import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.cellPosition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,8 +107,8 @@ fun Dock(
         }
     }
 
-    val collapsedColor = panelColor(Color.White.copy(alpha = 0.2f))
-    val expandedColor = panelColor(MaterialTheme.colorScheme.surfaceContainer)
+    val collapsedColor = panelColor(Panel.Dock, Color.White.copy(alpha = 0.2f))
+    val expandedColor = panelColor(Panel.Dock, MaterialTheme.colorScheme.surfaceContainer)
     val handleColor = MaterialTheme.colorScheme.onSurfaceVariant
     val rowHeight = dockRowHeight(labels)
 

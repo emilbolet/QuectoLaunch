@@ -37,7 +37,12 @@
     <string name="drawer_layout_list">List</string>
     <string name="drawer_layout_note">The grid has as many columns as the home screen.</string>
     <string name="transparency">Transparency</string>
-    <string name="transparency_note">How much of the wallpaper shows through the app list, the dock, folders, menus and the search bar. Menus always stay partly solid so they can be read.</string>
+    <string name="transparency_note">How much of the wallpaper shows through each part. Menus always stay partly solid so they can be read.</string>
+    <string name="transparency_app_list">App list</string>
+    <string name="transparency_dock">Dock</string>
+    <string name="transparency_folders">Folders</string>
+    <string name="transparency_menus">Long-press menus</string>
+    <string name="transparency_search_bar">Search bar</string>
     <string name="percent">%1$d%%</string>
     <string name="icon_pack">Icon pack</string>
     <string name="change_icon">Change icon</string>

@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.BuiltInWidget
+import dk.emilbolet.quectolaunch.data.Panel
 import kotlinx.coroutines.delay
 import java.util.Date
 
@@ -122,6 +123,7 @@ private fun ClockWidget(modifier: Modifier = Modifier) {
 /** Looks like a search field; a tap opens the app list with the keyboard up (see WidgetLayer). */
 @Composable
 private fun SearchWidget(modifier: Modifier = Modifier) {
+    val content = if (panelNeedsLightText(Panel.SearchBar)) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val height = minOf(48.dp, maxHeight)
         Row(
@@ -130,20 +132,20 @@ private fun SearchWidget(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(height)
                 .clip(RoundedCornerShape(height / 2))
-                .background(panelColor(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)))
+                .background(panelColor(Panel.SearchBar, MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)))
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 Icons.Default.Search,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = content,
             )
             Spacer(Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.search_apps),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyLarge,
+                color = content,
+                style = MaterialTheme.typography.bodyLarge.onPanel(Panel.SearchBar),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

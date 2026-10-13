@@ -222,13 +222,13 @@ Patterns to keep:
 
 ## Transparency (keep this working)
 
-- Settings → "Transparency", 0–100 % in steps of 5, default 0 %. Saved as `LauncherSettings.panelOpacity` (1 − transparency) and provided as `LocalPanelOpacity`.
-- It applies to the "panels": the app list's background, the dock (closed and open), the folder popup, the long-press menus and the search bar widget. At 0 % everything looks as it did before the setting existed. Settings, the widget list, the Home screens overview and the icon picker stay solid.
-- A panel background goes through `panelColor(...)`. A new panel should too, and a new long-press menu must be a `LauncherMenu`, not a bare `DropdownMenu`.
-- What must not show through a see-through panel is hidden instead: the home screen fades out while the app list is open (always) or a folder is open (when transparency is above 0), and the grid fades as the dock opens, by as much as the dock lets through. Sticky letter headings in the app list become ordinary ones, because a see-through heading would have apps scrolling visibly under it.
+- Settings → "Transparency" has one slider per panel, 0–100 % in steps of 5, default 0 %: App list, Dock (closed and open), Folders (the popup), Long-press menus, Search bar (the widget). `Panel` is the enum; `LauncherSettings.panelOpacity` maps a panel to 1 − transparency (missing = solid) and is provided as `LocalPanelOpacity`. The owner first got a single slider for all and asked for separate ones the same day (2026-10-13).
+- At 0 % everything looks as it did before the setting existed. Settings, the widget list, the Home screens overview and the icon picker are always solid.
+- A panel background goes through `panelColor(panel, ...)`. A new panel should too, and a new long-press menu must be a `LauncherMenu`, not a bare `DropdownMenu`.
+- What must not show through a see-through panel is hidden instead: the home screen fades out while the app list is open (always) or a folder is open (when the folder's transparency is above 0), and the grid fades as the dock opens, by as much as the dock lets through. Sticky letter headings in the app list become ordinary ones when the app list is see-through, because apps would scroll visibly under them.
 - Menus never go below 75 % solid (`MIN_MENU_OPACITY`): they open on top of icons, which made their text unreadable below that.
-- Text color: `panelsNeedLightText` mixes the wallpaper's main color (`WallpaperManager.getWallpaperColors`, no permission needed) with the theme's surface color at the current opacity. If the mix is dark, text on panels turns white with the home screen's shadow (`panelsSeeThrough`, `panelContentColor()`, `TextStyle.onPanel()`); otherwise it keeps the theme's color. A wallpaper that is half light and half dark is judged by its main color only.
-- Not done: blurring what is behind a panel (Microsoft Launcher does; Android 12+ can blur behind a window), a slider per panel.
+- Text color, per panel: `panelNeedsLightText(panel)` mixes the wallpaper's main color (`rememberWallpaperColor`, from `WallpaperManager.getWallpaperColors`, no permission needed; darkened for the folder, which sits on a scrim) with the theme's surface color at the panel's opacity. If the mix is dark, text on that panel turns white with the home screen's shadow (`panelContentColor(panel)`, `TextStyle.onPanel(panel)`); otherwise it keeps the theme's color. A wallpaper that is half light and half dark is judged by its main color only.
+- Not done: blurring what is behind a panel (Microsoft Launcher does; Android 12+ can blur behind a window).
 
 ## Ideas and leftovers
 

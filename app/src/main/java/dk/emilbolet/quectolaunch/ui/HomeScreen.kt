@@ -89,6 +89,7 @@ import dk.emilbolet.quectolaunch.data.FolderEntry
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
 import dk.emilbolet.quectolaunch.data.HomeLayout
+import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.PageRequest
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.WidgetEntry
@@ -276,13 +277,13 @@ fun HomeScreen(
           (maxWidth - 16.dp) / dockSlots - 14.dp,
       ).coerceAtLeast(32.dp)
 
-      val panelOpacity = LocalPanelOpacity.current
+      val dockOpacity = panelOpacity(Panel.Dock)
       Column(
           // Leaves room for the collapsed dock, which is drawn on top below
           Modifier
               // A see-through dock opens over the grid: the grid fades as far as the dock
               // lets it show, so icons and labels don't mix with the dock's own
-              .graphicsLayer { alpha = 1f - dockState.openFraction * (1f - panelOpacity) }
+              .graphicsLayer { alpha = 1f - dockState.openFraction * (1f - dockOpacity) }
               .systemBarsPadding()
               .padding(bottom = dockRowHeight(dockLabels) + 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -393,7 +394,7 @@ fun HomeScreen(
                 entry = entry,
                 showLabel = dockLabels,
                 iconSize = dockIconSize,
-                onWallpaper = !dockSolid || panelsSeeThrough,
+                onWallpaper = !dockSolid || panelNeedsLightText(Panel.Dock),
             )
         }
 

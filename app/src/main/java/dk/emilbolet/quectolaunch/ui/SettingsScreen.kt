@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -52,12 +53,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.DrawerLayout
 import dk.emilbolet.quectolaunch.data.IconPackInfo
 import dk.emilbolet.quectolaunch.data.LauncherSettings
+import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.ThemeMode
 import dk.emilbolet.quectolaunch.ui.theme.wallpaperColorsAvailable
@@ -184,30 +187,24 @@ fun SettingsScreen(
             }
 
             Section(stringResource(R.string.transparency)) {
-                // Kept here while dragging; the saved value follows
-                var transparency by remember { mutableFloatStateOf(1f - settings.panelOpacity) }
-                val label = stringResource(R.string.transparency)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Slider(
-                        value = transparency,
-                        onValueChange = {
-                            transparency = it
-                            onChange(settings.copy(panelOpacity = 1f - it))
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .semantics { contentDescription = label },
-                        // Steps of 5 %
-                        steps = 19,
-                    )
-                    Text(
-                        text = stringResource(R.string.percent, (transparency * 100).roundToInt()),
-                        modifier = Modifier.padding(start = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge,
+                Panel.entries.forEach { panel ->
+                    TransparencySlider(
+                        label = stringResource(
+                            when (panel) {
+                                Panel.AppList -> R.string.transparency_app_list
+                                Panel.Dock -> R.string.transparency_dock
+                                Panel.Folder -> R.string.transparency_folders
+                                Panel.Menu -> R.string.transparency_menus
+                                Panel.SearchBar -> R.string.transparency_search_bar
+                            }
+                        ),
+                        opacity = settings.panelOpacity[panel] ?: 1f,
+                        onChange = { onChange(settings.copy(panelOpacity = settings.panelOpacity + (panel to it))) },
                     )
                 }
                 Text(
                     text = stringResource(R.string.transparency_note),
+                    modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -466,6 +463,35 @@ private fun <T> Choices(
                 Text(label(option))
             }
         }
+    }
+}
+
+/** One panel's transparency: its name, a slider in steps of 5 % and the value. */
+@Composable
+private fun TransparencySlider(label: String, opacity: Float, onChange: (opacity: Float) -> Unit) {
+    // Kept here while dragging; the saved value follows
+    var transparency by remember { mutableFloatStateOf(1f - opacity) }
+    Text(text = label, style = MaterialTheme.typography.bodyLarge)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Slider(
+            value = transparency,
+            onValueChange = {
+                transparency = it
+                onChange(1f - it)
+            },
+            modifier = Modifier
+                .weight(1f)
+                .semantics { contentDescription = label },
+            steps = 19,
+        )
+        Text(
+            text = stringResource(R.string.percent, (transparency * 100).roundToInt()),
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .width(52.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.End,
+        )
     }
 }
 

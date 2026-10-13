@@ -41,6 +41,7 @@ import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.FolderEntry
 import dk.emilbolet.quectolaunch.data.HomeEntry
+import dk.emilbolet.quectolaunch.data.Panel
 
 private const val FOLDER_COLUMNS = 4
 
@@ -62,7 +63,7 @@ fun FolderPopup(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
+            .background(Color.Black.copy(alpha = FOLDER_SCRIM))
             .clickable(interactionSource = noRipple, indication = null, onClick = onClose)
             .systemBarsPadding()
             .imePadding(),
@@ -75,7 +76,7 @@ fun FolderPopup(
                 // Taps on the card itself shouldn't close the folder
                 .clickable(interactionSource = noRipple, indication = null, onClick = {}),
             shape = RoundedCornerShape(28.dp),
-            color = panelColor(MaterialTheme.colorScheme.surfaceContainerHigh),
+            color = panelColor(Panel.Folder, MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             Column(Modifier.padding(16.dp)) {
                 FolderTitle(folder, onRename)
@@ -95,7 +96,7 @@ fun FolderPopup(
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(vertical = 8.dp),
-                                    onWallpaper = panelsSeeThrough,
+                                    onWallpaper = panelNeedsLightText(Panel.Folder),
                                 )
                             }
                             repeat(FOLDER_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
@@ -112,8 +113,8 @@ private fun FolderTitle(folder: FolderEntry, onRename: (String) -> Unit) {
     val focusManager = LocalFocusManager.current
     // Kept locally while typing, so saving in the background can't move the cursor
     var title by remember(folder.id) { mutableStateOf(folder.title.orEmpty()) }
-    val style = MaterialTheme.typography.titleLarge.onPanel().copy(
-        color = panelContentColor(),
+    val style = MaterialTheme.typography.titleLarge.onPanel(Panel.Folder).copy(
+        color = panelContentColor(Panel.Folder),
         textAlign = TextAlign.Center,
     )
 

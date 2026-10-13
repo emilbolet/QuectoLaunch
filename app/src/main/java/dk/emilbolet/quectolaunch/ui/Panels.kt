@@ -21,44 +21,56 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import dk.emilbolet.quectolaunch.data.Panel
 
 /**
- * How solid the launcher's panels are, from 0 (only the wallpaper) to 1 (as the theme draws
- * them). The panels are the app list, the dock, the folder popup, the long-press menus and
- * the search bar widget; the "Transparency" setting is 1 minus this. Provided at the root.
+ * How solid each of the launcher's panels is, from 0 (only the wallpaper) to 1 (as the theme
+ * draws it); a panel that isn't in the map is solid. Each has its own "Transparency" slider
+ * in settings, which shows 1 minus this. Provided at the root.
  */
-val LocalPanelOpacity = compositionLocalOf { 1f }
+val LocalPanelOpacity = compositionLocalOf<Map<Panel, Float>> { emptyMap() }
 
-/** See [panelsSeeThrough]. Provided at the root from [panelsNeedLightText]. */
-val LocalPanelLightText = compositionLocalOf { false }
+/** The wallpaper's main color, to judge what text on a see-through panel sits on. */
+val LocalWallpaperColor = compositionLocalOf { Color.Black }
 
-/** A panel's background color with the transparency setting applied. */
 @Composable
-fun panelColor(color: Color): Color = color.copy(alpha = color.alpha * LocalPanelOpacity.current)
+fun panelOpacity(panel: Panel): Float = LocalPanelOpacity.current[panel] ?: 1f
+
+/** A panel's background color with its transparency setting applied. */
+@Composable
+fun panelColor(panel: Panel, color: Color): Color = color.copy(alpha = color.alpha * panelOpacity(panel))
 
 /**
- * Whether panels are see-through enough, over a dark enough wallpaper, that the theme's text
- * color can't be read on them. Text then goes white with a shadow, as on the home screen.
+ * Whether a panel is see-through enough, over a dark enough wallpaper, that the theme's text
+ * color can't be read on it. Text then goes white with a shadow, as on the home screen.
+ * Mixes the wallpaper's main color with the theme's surface color the way the panel does.
  */
-val panelsSeeThrough: Boolean
-    @Composable get() = LocalPanelLightText.current
+@Composable
+fun panelNeedsLightText(panel: Panel): Boolean {
+    val opacity = panelOpacity(panel)
+    if (opacity >= 1f) return false
+    var behind = LocalWallpaperColor.current
+    // An open folder dims everything behind it
+    if (panel == Panel.Folder) behind = lerp(behind, Color.Black, FOLDER_SCRIM)
+    return lerp(behind, MaterialTheme.colorScheme.surface, opacity).luminance() < LIGHT_TEXT_BELOW
+}
 
 /** The color for text and icons on a panel. */
 @Composable
-fun panelContentColor(): Color =
-    if (panelsSeeThrough) Color.White else MaterialTheme.colorScheme.onSurface
+fun panelContentColor(panel: Panel): Color =
+    if (panelNeedsLightText(panel)) Color.White else MaterialTheme.colorScheme.onSurface
 
 /** Adds the home screen's text shadow when the text is white because of the wallpaper. */
 @Composable
-fun TextStyle.onPanel(): TextStyle = if (panelsSeeThrough) copy(shadow = TextShadow) else this
+fun TextStyle.onPanel(panel: Panel): TextStyle =
+    if (panelNeedsLightText(panel)) copy(shadow = TextShadow) else this
 
 /**
- * Works out [panelsSeeThrough]: mixes the wallpaper's main color with the theme's surface
- * color the way a panel at [opacity] does, and asks for white text if the result is dark.
- * Follows wallpaper changes. Without a known wallpaper color (Android 8.0) it assumes a dark one.
+ * The wallpaper's main color, followed as the wallpaper changes. Needs no permission.
+ * Without a known color (Android 8.0) a dark wallpaper is assumed.
  */
 @Composable
-fun panelsNeedLightText(opacity: Float): Boolean {
+fun rememberWallpaperColor(): Color {
     val context = LocalContext.current
     var wallpaper by remember { mutableStateOf(Color.Black) }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -77,10 +89,11 @@ fun panelsNeedLightText(opacity: Float): Boolean {
             onDispose { manager.removeOnColorsChangedListener(listener) }
         }
     }
-    if (opacity >= 1f) return false
-    val behindText = lerp(wallpaper, MaterialTheme.colorScheme.surface, opacity)
-    return behindText.luminance() < LIGHT_TEXT_BELOW
+    return wallpaper
 }
+
+/** How dark the scrim behind an open folder is. */
+const val FOLDER_SCRIM = 0.45f
 
 /** Relative luminance under which white text reads better than dark text. */
 private const val LIGHT_TEXT_BELOW = 0.4f
@@ -91,14 +104,14 @@ private const val LIGHT_TEXT_BELOW = 0.4f
  */
 private const val MIN_MENU_OPACITY = 0.75f
 
-/** A long-press menu. All menus go through here so they follow the transparency setting. */
+/** A long-press menu. All menus go through here so they follow their transparency setting. */
 @Composable
 fun LauncherMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val opacity = MIN_MENU_OPACITY + (1f - MIN_MENU_OPACITY) * LocalPanelOpacity.current
+    val opacity = MIN_MENU_OPACITY + (1f - MIN_MENU_OPACITY) * panelOpacity(Panel.Menu)
     val solid = opacity >= 1f
     DropdownMenu(
         expanded = expanded,

@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { System, Light, Dark }
 
+/** The parts of the launcher that can be made see-through, each with its own setting. */
+enum class Panel { AppList, Dock, Folder, Menu, SearchBar }
+
 /** How the app list is shown: icons in a grid under each letter, or one app per line. */
 enum class DrawerLayout { Grid, List }
 
@@ -28,10 +31,10 @@ data class LauncherSettings(
     /** Icons in each of the dock's rows. */
     val dockSlots: Int = 5,
     /**
-     * How solid the app list, dock, folders, menus and search bar are: 1 as the theme draws
-     * them, 0 only the wallpaper. Shown in settings the other way round, as "Transparency".
+     * How solid each panel is: 1 as the theme draws it, 0 only the wallpaper. A panel that
+     * isn't in the map is solid. Shown in settings the other way round, as "Transparency".
      */
-    val panelOpacity: Float = 1f,
+    val panelOpacity: Map<Panel, Float> = emptyMap(),
     /** App names under the dock's icons. */
     val dockLabels: Boolean = false,
     val drawerLayout: DrawerLayout = DrawerLayout.Grid,
@@ -75,7 +78,7 @@ class SettingsStore(private val context: Context) {
     private val rowsKey = intPreferencesKey("rows")
     private val dockSlotsKey = intPreferencesKey("dock_slots")
     private val dockLabelsKey = booleanPreferencesKey("dock_labels")
-    private val panelOpacityKey = floatPreferencesKey("panel_opacity")
+    private fun panelOpacityKey(panel: Panel) = floatPreferencesKey("panel_opacity_" + panel.name)
     private val drawerLayoutKey = stringPreferencesKey("drawer_layout")
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
@@ -112,7 +115,9 @@ class SettingsStore(private val context: Context) {
             dockSlots = (prefs[dockSlotsKey] ?: defaults.dockSlots)
                 .coerceIn(LauncherSettings.DOCK_SLOT_CHOICES),
             dockLabels = prefs[dockLabelsKey] ?: defaults.dockLabels,
-            panelOpacity = (prefs[panelOpacityKey] ?: defaults.panelOpacity).coerceIn(0f, 1f),
+            panelOpacity = Panel.entries.mapNotNull { panel ->
+                prefs[panelOpacityKey(panel)]?.let { panel to it.coerceIn(0f, 1f) }
+            }.toMap(),
             drawerLayout = DrawerLayout.entries.firstOrNull { it.name == prefs[drawerLayoutKey] }
                 ?: defaults.drawerLayout,
             iconPack = prefs[iconPackKey],
@@ -151,7 +156,10 @@ class SettingsStore(private val context: Context) {
             prefs[rowsKey] = settings.rows
             prefs[dockSlotsKey] = settings.dockSlots
             prefs[dockLabelsKey] = settings.dockLabels
-            prefs[panelOpacityKey] = settings.panelOpacity
+            Panel.entries.forEach { panel ->
+                val opacity = settings.panelOpacity[panel]
+                if (opacity != null) prefs[panelOpacityKey(panel)] = opacity else prefs.remove(panelOpacityKey(panel))
+            }
             prefs[drawerLayoutKey] = settings.drawerLayout.name
             prefs[gesturesKey] = settings.gestures
             if (settings.iconPack != null) prefs[iconPackKey] = settings.iconPack else prefs.remove(iconPackKey)

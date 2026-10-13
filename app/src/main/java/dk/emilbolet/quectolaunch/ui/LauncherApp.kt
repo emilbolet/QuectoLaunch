@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import dk.emilbolet.quectolaunch.LauncherViewModel
 import dk.emilbolet.quectolaunch.data.LauncherSettings
+import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.PendingWidget
 import dk.emilbolet.quectolaunch.ui.theme.isDark
 import kotlinx.coroutines.delay
@@ -87,16 +88,16 @@ fun LauncherApp(
 
     // With a see-through app list or folder the home screen must not show behind it, only
     // the wallpaper
-    val seeThrough = settings.panelOpacity < 1f
+    val folderSeeThrough = (settings.panelOpacity[Panel.Folder] ?: 1f) < 1f
     val homeAlpha by animateFloatAsState(
-        targetValue = if (drawerOpen || (seeThrough && openFolder != null)) 0f else 1f,
+        targetValue = if (drawerOpen || (folderSeeThrough && openFolder != null)) 0f else 1f,
         label = "home",
     )
 
     CompositionLocalProvider(
         LocalChangeIcon provides viewModel::openIconPicker,
         LocalPanelOpacity provides settings.panelOpacity,
-        LocalPanelLightText provides panelsNeedLightText(settings.panelOpacity),
+        LocalWallpaperColor provides rememberWallpaperColor(),
     ) {
     Box(
         Modifier

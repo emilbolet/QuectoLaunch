@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dk.emilbolet.quectolaunch.data.Panel
 
 /** Width of the letter strip; the list leaves this much room on the right. */
 internal val ScrollerWidth = 28.dp
@@ -102,7 +103,7 @@ fun AlphabetScroller(
                     color = if (isActive) {
                         MaterialTheme.colorScheme.primary
                     } else {
-                        if (panelsSeeThrough) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        if (panelNeedsLightText(Panel.AppList)) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
             }

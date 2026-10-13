@@ -78,6 +78,7 @@ import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.AppSection
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.DrawerLayout
+import dk.emilbolet.quectolaunch.data.Panel
 import kotlinx.coroutines.launch
 
 private val GridIconSize = 48.dp
@@ -118,8 +119,8 @@ fun AppDrawer(
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = panelColor(MaterialTheme.colorScheme.surface),
-        contentColor = panelContentColor(),
+        color = panelColor(Panel.AppList, MaterialTheme.colorScheme.surface),
+        contentColor = panelContentColor(Panel.AppList),
     ) {
         Column(
             Modifier
@@ -202,7 +203,7 @@ private fun BoxScope.AlphabeticalList(
     var touchedLetter by remember { mutableStateOf<String?>(null) }
     var bubbleLetter by remember { mutableStateOf("") }
 
-    val solid = LocalPanelOpacity.current >= 1f
+    val solid = panelOpacity(Panel.AppList) >= 1f
 
     LazyColumn(
         state = listState,
@@ -362,11 +363,11 @@ private fun SectionHeader(letter: String) {
         text = letter,
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (LocalPanelOpacity.current >= 1f) MaterialTheme.colorScheme.surface else Color.Transparent)
+            .background(if (panelOpacity(Panel.AppList) >= 1f) MaterialTheme.colorScheme.surface else Color.Transparent)
             .padding(start = 20.dp, top = 12.dp, bottom = 4.dp),
-        style = MaterialTheme.typography.titleSmall.onPanel(),
+        style = MaterialTheme.typography.titleSmall.onPanel(Panel.AppList),
         fontWeight = FontWeight.Bold,
-        color = if (panelsSeeThrough) Color.White else MaterialTheme.colorScheme.primary,
+        color = if (panelNeedsLightText(Panel.AppList)) Color.White else MaterialTheme.colorScheme.primary,
     )
 }
 
@@ -391,7 +392,7 @@ private fun AppRow(app: AppInfo, repository: AppRepository, dragState: DragState
             Spacer(Modifier.width(16.dp))
             Text(
                 text = app.label,
-                style = MaterialTheme.typography.bodyLarge.onPanel(),
+                style = MaterialTheme.typography.bodyLarge.onPanel(Panel.AppList),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -435,7 +436,7 @@ private fun AppCell(app: AppInfo, repository: AppRepository, dragState: DragStat
             Text(
                 text = app.label,
                 modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.labelMedium.onPanel(),
+                style = MaterialTheme.typography.labelMedium.onPanel(Panel.AppList),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -477,7 +478,7 @@ private fun WebSearchRow(query: String, onClick: () -> Unit) {
         Spacer(Modifier.width(16.dp))
         Text(
             text = stringResource(R.string.search_web, query),
-            style = MaterialTheme.typography.bodyLarge.onPanel(),
+            style = MaterialTheme.typography.bodyLarge.onPanel(Panel.AppList),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
