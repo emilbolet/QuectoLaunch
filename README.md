@@ -5,7 +5,7 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 > [!WARNING]
 > **This project is vibe coded.** All of the code was written by an AI (Claude Code), directed by the owner in plain-language conversation. No human has reviewed the code line by line.
 >
-> It has mostly been run on an Android emulator, in English, with only brief use on one real phone. There are no automated tests. Treat it as a personal experiment: read the code before you rely on it, and use it at your own risk.
+> It has mostly been run on an Android emulator, in English, with limited use on one real phone. There are no automated tests. Treat it as a personal experiment: read the code before you rely on it, and use it at your own risk.
 
 ## What it does
 
@@ -42,7 +42,7 @@ To make a release:
 1. Set `versionName` and `versionCode` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (it becomes the release notes).
 2. Commit, then tag the commit with `v` plus the version name and push the tag: `git tag v0.1 && git push origin v0.1`.
 
-The workflow refuses to release if the tag and `versionName` differ.
+The workflow refuses to release if the tag and `versionName` differ. A version with a suffix, such as `0.2-beta1`, is published as a pre-release.
 
 ### Signing key (one-time setup)
 

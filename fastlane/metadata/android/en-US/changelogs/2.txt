@@ -1,0 +1,6 @@
+Beta: for testing, expect rough edges.
+
+- Accent color: pick any color with the new Color and Vividness sliders
+- Icon packs: apps a pack doesn't cover are styled to match where the pack allows it
+- Icon packs: calendar icons show the date and clock icons the time
+- New "Change icon" in an app's long-press menu: pick any icon from an icon pack for that app

@@ -1,7 +1,8 @@
 name: Build
 
 # Every push and pull request is built and linted.
-# Pushing a tag like v0.1 also signs the release APK and publishes it as a GitHub release.
+# Pushing a tag like v0.1 also signs the release APK and publishes it as a GitHub release
+# (a pre-release if the version has a suffix, like v0.2-beta1).
 on:
   push:
     branches: [main]
@@ -94,7 +95,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # A version with a suffix, like 0.2-beta1, is published as a pre-release
+          prerelease=""
+          case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" "QuectoLaunch-$VERSION.apk" \
-            --verify-tag \
+            --verify-tag $prerelease \
             --title "QuectoLaunch $VERSION" \
             --notes-file "fastlane/metadata/android/en-US/changelogs/$VERSION_CODE.txt"

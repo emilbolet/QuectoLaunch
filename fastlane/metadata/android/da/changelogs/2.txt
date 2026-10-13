@@ -1,0 +1,6 @@
+Beta: til afprøvning, forvent småfejl.
+
+- Accentfarve: vælg en hvilken som helst farve med de nye skydere Farve og Farvestyrke
+- Ikonpakker: apps, som pakken ikke dækker, tilpasses pakkens stil, hvor pakken giver mulighed for det
+- Ikonpakker: kalenderikoner viser datoen, og urikoner viser klokken
+- Nyt "Skift ikon" i menuen ved langt tryk på en app: vælg et ikon fra en ikonpakke til netop den app
