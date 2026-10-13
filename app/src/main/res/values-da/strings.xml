@@ -49,4 +49,15 @@
     <string name="gesture_service_description">Lader dig låse telefonen ved at dobbelttrykke på startskærmen og åbne notifikationer ved at stryge ned. QuectoLaunch læser ikke, hvad der står på din skærm, og indsamler ingen data.</string>
     <string name="widgets">Widgets</string>
     <string name="resize">Tilpas størrelse</string>
+    <string name="home_screens">Startskærme</string>
+    <string name="home_screens_hint">Tryk på en skærm for at gå til den. Hold og træk for at ændre rækkefølgen.</string>
+    <string name="home_screen_number">Startskærm %1$d</string>
+    <string name="add_home_screen">Tilføj startskærm</string>
+    <string name="remove_home_screen">Fjern startskærm %1$d</string>
+    <string name="remove_home_screen_title">Fjern denne startskærm?</string>
+    <plurals name="remove_home_screen_text">
+        <item quantity="one">%1$d element på den fjernes fra startskærmen. Dine apps bliver ved med at være installeret.</item>
+        <item quantity="other">De %1$d elementer på den fjernes fra startskærmen. Dine apps bliver ved med at være installeret.</item>
+    </plurals>
+    <string name="cancel">Annuller</string>
 </resources>

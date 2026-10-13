@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus five additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, and the grid layout for the app list. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, and the "Home screens" overview for adding, reordering and removing pages. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -57,7 +57,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     Alphabet.kt            Locale-aware sort (Collator) and A–Z sections
     AppRepository.kt       LauncherApps: load apps, change callback, icons (LruCache, icon pack), shortcuts, launch, uninstall, web search
     IconPack.kt            Parses an icon pack's appfilter.xml and resolves its drawables
-    HomeDatabase.kt        Room: HomeItem entity, HomeDao (drop/remove/folder/widget placement rules live here, in transactions)
+    HomeDatabase.kt        Room: HomeItem and HomeMeta (page count) entities, HomeDao (drop/remove/folder/widget/page rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
     Settings.kt            LauncherSettings (theme mode, accent, grid size, dock size, app list layout, icon pack, gestures) and SettingsStore (DataStore)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
@@ -67,6 +67,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     HomeScreen.kt          Clock, default-home button, grid, search bar, EntryCell (icon + label + menu), scrim behind the open dock
     Widgets.kt             WidgetLayer (widgets drawn over a page's cells), resize handles
     WidgetPicker.kt        List of installed widgets by app (in-tree overlay)
+    PageManager.kt         "Home screens" overview: page previews, drag to reorder, add, remove (in-tree overlay)
     Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows and the quick toggles
     FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
@@ -117,12 +118,12 @@ Patterns to keep:
 
 ## What step 4 does (keep this working)
 
-- Long-press on empty home space shows a small menu: Widgets, Launcher settings. The settings screen closes on Back or Home; changes apply and save immediately.
+- Long-press on empty home space shows a small menu: Widgets, Home screens, Launcher settings. The settings screen closes on Back or Home; changes apply and save immediately.
 - Theme: follow system / light / dark. Use `MaterialTheme.colorScheme.isDark`, not `isSystemInDarkTheme()`, to ask whether the launcher is dark.
 - Accent color: "Use wallpaper colors" (Android 12+ only, the default there) or one of 8 presets. A preset builds the whole color scheme from that hue in `accentColorScheme` (HSL-based; no extra library).
 - Grid size: 4–6 columns, 4–7 rows. Icons shrink when cells get small. Items outside a smaller grid stay in the database and are just not drawn. The dock has its own setting, "Icons per dock row" (4–7, both rows), which works the same way.
 - Settings load asynchronously; `MainActivity` draws nothing until they arrive so the wrong theme never flashes.
-- Room is at schema version 4 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns). Add a migration for any further schema change.
+- Room is at schema version 5 (1→2 and 2→3 re-numbered home and dock positions; 3→4 added the widget columns; 4→5 added the `home_meta` table with the page count). Add a migration for any further schema change.
 
 ## What step 5 does (keep this working)
 
@@ -145,10 +146,22 @@ Patterns to keep:
 ## Home pages (keep this working)
 
 - The home grid is a `HorizontalPager`; swipe sideways between pages. Dots above the chevron show the page (hidden with one page). The clock, search bar and dock are the same on every page.
-- There is no "add page" button. While an icon is dragged, one spare empty page exists at the end; holding the icon at the left or right screen edge for 600 ms turns the page. Dropping on the spare page creates it.
+- While an icon is dragged, one spare empty page exists at the end; holding the icon at the left or right screen edge for 600 ms turns the page. Dropping on the spare page creates it. Pages can also be added in the "Home screens" overview (next section).
 - `HomeItem.page` is the page (0 for dock and folder contents); `HomeLayout.pages` is the list the UI draws; `DropTarget.page` comes from `DragState.gridPage` (the pager's current page).
-- Empty pages are closed up by `HomeDao.compactPages()` only at startup and on a Home press, when the pager scrolls back to page 0 anyway. Don't compact while the user is looking at a later page, or the content shifts under them.
+- The number of pages is saved (`home_meta.pages`), so a page stays when it becomes empty. Pages are only removed by the user, in the overview. (Before the overview existed, empty pages were closed up automatically at startup and on a Home press; that is gone.)
+- The page count the UI uses is the larger of the saved count and the highest page in use + 1 (`buildLayout`, `HomeDao.pageCount`). `HomeDao.growPages()` saves the new count after anything lands on the spare page.
 - Home press (`onNewIntent`) goes to the first page; returning from an app (`onStop`) keeps the current page.
+
+## Home screens overview (keep this working)
+
+- Long-press empty home space → "Home screens" (`PageManager`). The owner calls pages "home screens"; the UI text does too, the code says "page".
+- Every page is a small preview (icons and folders in their cells, widgets as grey blocks), two per row, with its number underneath. The current page has an accent border. Tap a preview to go to that page.
+- Add: the + tile at the end adds an empty page (`HomeDao.addPage`).
+- Remove: the ✕ under a preview. An empty page goes at once; a page with content asks first, then its apps, folders (with contents) and widgets are deleted and the widget IDs given back (`HomeDao.removePage` returns them). Later pages move one step left.
+- **There is always at least one page:** with one page left there is no ✕, and `HomeDao.removePage` refuses as well.
+- Reorder: hold a preview and drag it; the others make room, and the drop calls `HomeDao.reorderPage(from, to)`.
+- Pages have no ID. A preview's Compose key is the smallest item ID on the page (empty pages: a negative counter), so it stays put when the saved order arrives. Between the drop and that moment, `PendingMove` keeps showing the new order.
+- Not done: auto-scroll while dragging a preview (matters only with more pages than fit on screen), reordering for screen-reader users, a limit on the number of pages.
 
 ## Widgets (keep this working)
 

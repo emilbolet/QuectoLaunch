@@ -49,7 +49,8 @@ fun LauncherApp(
 
     // Dark icons over the light drawer and settings; light icons over the wallpaper
     SystemBarIcons(
-        darkIcons = (drawerOpen || viewModel.settingsOpen || viewModel.widgetPickerOpen) &&
+        darkIcons = (drawerOpen || viewModel.settingsOpen || viewModel.widgetPickerOpen ||
+            viewModel.pageManagerOpen) &&
             !MaterialTheme.colorScheme.isDark,
     )
 
@@ -58,6 +59,7 @@ fun LauncherApp(
         when {
             viewModel.settingsOpen -> viewModel.closeSettings()
             viewModel.widgetPickerOpen -> viewModel.closeWidgetPicker()
+            viewModel.pageManagerOpen -> viewModel.closePageManager()
             drawerOpen -> viewModel.closeDrawer()
             openFolder != null -> viewModel.closeFolder()
             else -> scope.launch { dockState.animateTo(DockValue.Collapsed) }
@@ -98,6 +100,7 @@ fun LauncherApp(
             onRemove = viewModel::remove,
             onResizeWidget = viewModel::resizeWidget,
             onOpenWidgets = viewModel::openWidgetPicker,
+            onOpenPages = viewModel::openPageManager,
             onOpenSettings = viewModel::openSettings,
         )
 
@@ -171,6 +174,26 @@ fun LauncherApp(
                     )
                 },
                 onClose = viewModel::closeWidgetPicker,
+            )
+        }
+
+        AnimatedVisibility(visible = viewModel.pageManagerOpen, enter = fadeIn(), exit = fadeOut()) {
+            val grid = dragState.gridBounds
+            PageManager(
+                pages = layout.pages,
+                currentPage = dragState.gridPage,
+                columns = settings.columns,
+                rows = settings.rows,
+                aspectRatio = if (grid.height > 0f) grid.width / grid.height else 0.8f,
+                repository = viewModel.repository,
+                onShow = { page ->
+                    viewModel.showPage(page)
+                    viewModel.closePageManager()
+                },
+                onMove = viewModel::movePage,
+                onAdd = viewModel::addPage,
+                onRemove = viewModel::removePage,
+                onClose = viewModel::closePageManager,
             )
         }
 

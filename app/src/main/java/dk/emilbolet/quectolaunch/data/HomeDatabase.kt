@@ -55,8 +55,40 @@ data class HomeItem(
     }
 }
 
+/** A single row ([id] 0) with the number of home pages, so that a page can exist while it is empty. */
+@Entity(tableName = "home_meta")
+data class HomeMeta(
+    @PrimaryKey val id: Int = 0,
+    val pages: Int,
+)
+
 @Dao
 abstract class HomeDao {
+
+    /** Null until something has been saved; the real page count is never less than the pages in use. */
+    @Query("SELECT pages FROM home_meta WHERE id = 0")
+    abstract fun observeStoredPages(): Flow<Int?>
+
+    @Query("SELECT pages FROM home_meta WHERE id = 0")
+    protected abstract suspend fun storedPages(): Int?
+
+    @Query("INSERT OR REPLACE INTO home_meta (id, pages) VALUES (0, :pages)")
+    protected abstract suspend fun setPages(pages: Int)
+
+    @Query(
+        "DELETE FROM home_items WHERE container IN " +
+            "(SELECT id FROM home_items WHERE container = ${HomeItem.HOME} AND page = :page)"
+    )
+    protected abstract suspend fun deleteFolderContentsOnPage(page: Int)
+
+    @Query("DELETE FROM home_items WHERE container = ${HomeItem.HOME} AND page = :page")
+    protected abstract suspend fun deletePage(page: Int)
+
+    @Query(
+        "UPDATE home_items SET page = page + :by " +
+            "WHERE container = ${HomeItem.HOME} AND page BETWEEN :first AND :last"
+    )
+    protected abstract suspend fun shiftPages(first: Int, last: Int, by: Int)
 
     @Query("SELECT * FROM home_items ORDER BY position")
     abstract fun observe(): Flow<List<HomeItem>>
@@ -81,9 +113,6 @@ abstract class HomeDao {
 
     @Query("SELECT * FROM home_items WHERE appWidgetId IS NOT NULL")
     abstract suspend fun widgets(): List<HomeItem>
-
-    @Query("SELECT DISTINCT page FROM home_items WHERE container = ${HomeItem.HOME} ORDER BY page")
-    protected abstract suspend fun usedPages(): List<Int>
 
     @Query("UPDATE home_items SET page = :to WHERE container = ${HomeItem.HOME} AND page = :from")
     protected abstract suspend fun movePage(from: Int, to: Int)
@@ -165,6 +194,7 @@ abstract class HomeDao {
         }
 
         moving?.let { tidyFolder(it.container) }
+        growPages()
     }
 
     @Transaction
@@ -194,7 +224,7 @@ abstract class HomeDao {
         spanX: Int,
         spanY: Int,
     ): Int {
-        val newPage = (lastPage() ?: -1) + 1
+        val newPage = pageCount()
         for (page in startPage.coerceIn(0, newPage)..newPage) {
             val items = onPage(page)
             for (row in 0..rows - spanY) {
@@ -211,6 +241,7 @@ abstract class HomeDao {
                                 spanY = spanY,
                             )
                         )
+                        growPages()
                         return page
                     }
                 }
@@ -228,7 +259,10 @@ abstract class HomeDao {
         val blocked = onPage(page).any {
             it.id != id && it.overlaps(row, column, widget.spanX, widget.spanY)
         }
-        if (!blocked) update(widget.copy(page = page, position = position))
+        if (!blocked) {
+            update(widget.copy(page = page, position = position))
+            growPages()
+        }
     }
 
     /** Changes a widget's size, if the cells it would cover are free. */
@@ -241,12 +275,50 @@ abstract class HomeDao {
         if (!blocked) update(widget.copy(spanX = spanX, spanY = spanY))
     }
 
-    /** Closes the gaps left by home pages that have become empty, keeping the order. */
+    private suspend fun pageCount(): Int = maxOf(storedPages() ?: 1, (lastPage() ?: 0) + 1)
+
+    /** After something was put on the spare page shown while dragging, that page is a real one. */
+    private suspend fun growPages() {
+        val count = pageCount()
+        if (count != storedPages()) setPages(count)
+    }
+
+    /** Adds an empty home page at the end. */
     @Transaction
-    open suspend fun compactPages() {
-        usedPages().forEachIndexed { index, page ->
-            if (page != index) movePage(from = page, to = index)
+    open suspend fun addPage() {
+        setPages(pageCount() + 1)
+    }
+
+    /**
+     * Removes a home page and everything on it; later pages move one step left. The last
+     * remaining page can't be removed. Returns the Android IDs of the widgets that were on it.
+     */
+    @Transaction
+    open suspend fun removePage(page: Int): List<Int> {
+        val count = pageCount()
+        if (count <= 1 || page !in 0 until count) return emptyList()
+        val widgetIds = onPage(page).mapNotNull { it.appWidgetId }
+        deleteFolderContentsOnPage(page)
+        deletePage(page)
+        shiftPages(first = page + 1, last = count - 1, by = -1)
+        setPages(count - 1)
+        return widgetIds
+    }
+
+    /** Moves a home page to another place in the order; the pages in between shift by one. */
+    @Transaction
+    open suspend fun reorderPage(from: Int, to: Int) {
+        val count = pageCount()
+        if (from == to || from !in 0 until count || to !in 0 until count) return
+        movePage(from, to = PAGE_IN_TRANSIT)
+        if (from < to) {
+            shiftPages(first = from + 1, last = to, by = -1)
+        } else {
+            shiftPages(first = to, last = from - 1, by = 1)
         }
+        movePage(from = PAGE_IN_TRANSIT, to)
+        // An empty page that ended up last must not drop off the end
+        setPages(count)
     }
 
     /** A folder left with one app turns back into that app; an empty one disappears. */
@@ -264,14 +336,17 @@ abstract class HomeDao {
     }
 }
 
-@Database(entities = [HomeItem::class], version = 4, exportSchema = false)
+/** Where a page's items are parked while the pages around it are renumbered. */
+private const val PAGE_IN_TRANSIT = -1
+
+@Database(entities = [HomeItem::class, HomeMeta::class], version = 5, exportSchema = false)
 abstract class HomeDatabase : RoomDatabase() {
     abstract fun homeDao(): HomeDao
 
     companion object {
         fun create(context: Context): HomeDatabase =
             Room.databaseBuilder(context, HomeDatabase::class.java, "home.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
 
         /** Version 1 numbered home cells as row * 5 + column, which broke when the grid changed size. */
@@ -301,6 +376,20 @@ abstract class HomeDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE home_items ADD COLUMN widgetProvider TEXT")
                 db.execSQL("ALTER TABLE home_items ADD COLUMN spanX INTEGER NOT NULL DEFAULT 1")
                 db.execSQL("ALTER TABLE home_items ADD COLUMN spanY INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        /** The number of home pages is saved, so pages can be added and stay while empty. */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `home_meta` " +
+                        "(`id` INTEGER NOT NULL, `pages` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "INSERT INTO home_meta (id, pages) " +
+                        "SELECT 0, COALESCE(MAX(page), 0) + 1 FROM home_items WHERE container = ${HomeItem.HOME}"
+                )
             }
         }
     }

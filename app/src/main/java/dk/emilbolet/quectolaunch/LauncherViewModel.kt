@@ -74,7 +74,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** The home grid and dock; items whose app is missing or disabled are left out. */
     val layout: StateFlow<HomeLayout> =
-        combine(homeDao.observe(), _sections) { items, sections -> buildLayout(items, sections) }
+        combine(homeDao.observe(), homeDao.observeStoredPages(), _sections) { items, pages, sections ->
+            buildLayout(items, pages ?: 1, sections)
+        }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, HomeLayout())
 
@@ -99,6 +101,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         private set
 
     var widgetPickerOpen by mutableStateOf(false)
+        private set
+
+    var pageManagerOpen by mutableStateOf(false)
         private set
 
     private val _widgetGroups = MutableStateFlow<List<WidgetGroup>>(emptyList())
@@ -143,7 +148,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             homeDao.removeApps { key -> !repository.isInstalled(key) }
             removeWidgets { widgets.info(it.appWidgetId!!) == null }
-            homeDao.compactPages()
         }
     }
 
@@ -155,7 +159,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun buildLayout(items: List<HomeItem>, sections: List<AppSection>): HomeLayout {
+    private fun buildLayout(items: List<HomeItem>, storedPages: Int, sections: List<AppSection>): HomeLayout {
         val apps = sections.asSequence().flatMap { it.apps }.associateBy { it.key }
         val byContainer = items.groupBy { it.container }
 
@@ -178,7 +182,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }.associateBy { it.position }
 
         val home = byContainer[HomeItem.HOME].orEmpty().groupBy { it.page }
-        val pageCount = (home.keys.maxOrNull() ?: 0) + 1
+        // Pages stay until the user removes them, also when they are empty
+        val pageCount = maxOf(storedPages, (home.keys.maxOrNull() ?: 0) + 1)
         return HomeLayout(
             pages = List(pageCount) { page -> entries(home[page].orEmpty()) },
             dock = entries(byContainer[HomeItem.DOCK].orEmpty()),
@@ -216,20 +221,38 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         closeFolder()
         closeSettings()
         closeWidgetPicker()
+        closePageManager()
         homeResets++
-        if (toFirstPage) {
-            showPage(0)
-            // A safe moment to drop empty pages: the pages are about to scroll back anyway
-            viewModelScope.launch { homeDao.compactPages() }
-        }
+        if (toFirstPage) showPage(0)
     }
 
     override fun onCleared() {
         controls.close()
     }
 
-    private fun showPage(page: Int) {
+    fun showPage(page: Int) {
         pageRequest = PageRequest(page, pageRequest.serial + 1)
+    }
+
+    fun openPageManager() {
+        pageManagerOpen = true
+    }
+
+    fun closePageManager() {
+        pageManagerOpen = false
+    }
+
+    fun addPage() {
+        viewModelScope.launch { homeDao.addPage() }
+    }
+
+    fun movePage(from: Int, to: Int) {
+        viewModelScope.launch { homeDao.reorderPage(from, to) }
+    }
+
+    /** Removes a page with everything on it; the last remaining page is kept. */
+    fun removePage(page: Int) {
+        viewModelScope.launch { homeDao.removePage(page).forEach(widgets::deleteId) }
     }
 
     fun openWidgetPicker() {

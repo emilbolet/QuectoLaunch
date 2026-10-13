@@ -51,7 +51,8 @@ data class PageRequest(val page: Int = 0, val serial: Int = 0)
 
 /**
  * The saved layout joined with the installed apps. [pages] are the home screen pages from
- * left to right (always at least one); each page and the dock are keyed by cell position.
+ * left to right (always at least one, and a page may be empty); each page and the dock are
+ * keyed by cell position.
  */
 data class HomeLayout(
     val pages: List<Map<Int, HomeEntry>> = listOf(emptyMap()),

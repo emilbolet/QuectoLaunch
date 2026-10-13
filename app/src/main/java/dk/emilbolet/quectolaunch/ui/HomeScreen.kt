@@ -140,6 +140,7 @@ fun HomeScreen(
     onRemove: (HomeEntry) -> Unit,
     onResizeWidget: (WidgetEntry, spanX: Int, spanY: Int) -> Unit,
     onOpenWidgets: () -> Unit,
+    onOpenPages: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val currentOnOpen by rememberUpdatedState(onOpenDrawer)
@@ -392,6 +393,13 @@ fun HomeScreen(
                     onClick = {
                         homeMenuAt = null
                         onOpenWidgets()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.home_screens)) },
+                    onClick = {
+                        homeMenuAt = null
+                        onOpenPages()
                     },
                 )
                 DropdownMenuItem(

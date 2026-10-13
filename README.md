@@ -14,7 +14,7 @@ A small Android home-screen app: a simplified take on the Microsoft Launcher lay
 - **A–Z scroller:** touch or drag the letters on the right edge of the app list to jump. A big letter bubble shows where you are and the phone gives a light tick on each new letter.
 - **Search:** tap the search bar on home. Names that start with what you typed come first; Enter opens the top result, and there is always a "search the web" row.
 - **Pinning apps:** hold an app in the list and drag it onto the home screen or the dock. Hold an icon on home to move it.
-- **Pages:** swipe sideways between home pages. To make a new one, drag an icon to the right edge of the screen and hold it there.
+- **Home screens:** swipe sideways between them. Hold an empty spot and choose Home screens to add, remove or reorder them (hold and drag a preview to move it). There is always at least one. You can also make a new one by dragging an icon to the right edge of the screen and holding it there.
 - **Widgets:** hold an empty spot on the home screen and choose Widgets. Hold a widget to resize, move or remove it.
 - **Folders:** drop one app on another. Tap the folder to open it, tap its title to rename it.
 - **Long-press an app:** its shortcuts (while QuectoLaunch is your default home app), Remove, App info, Uninstall.
