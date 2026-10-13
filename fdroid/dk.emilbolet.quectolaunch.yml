@@ -2,7 +2,7 @@
 # copy it to metadata/dk.emilbolet.quectolaunch.yml in a fork of
 # https://gitlab.com/fdroid/fdroiddata and open a merge request there.
 #
-# Before that: make the GitHub repository public. The commit below is tag v0.1.
+# The commit below is tag v0.1.
 # Not yet run through "fdroid lint" or "fdroid build".
 Categories:
   - System

@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, private).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -245,7 +245,7 @@ The owner wants to submit the app to F-Droid. Done in the repo on 2026-10-13:
 - `fdroid/dk.emilbolet.quectolaunch.yml` is a draft of the build recipe for the `fdroiddata` merge request. It has not been through `fdroid lint` or `fdroid build`.
 - `./gradlew assembleRelease` works (unsigned APK) and the result runs on the emulator; lint has no errors.
 
-Still open, and the owner's to do or decide: make the GitHub repo public (it is private) and open the merge request on GitLab. `main` is pushed and `v0.1` is tagged; the recipe has that commit's hash. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
+Still open, and the owner's to do: open the merge request on GitLab (the GitHub repo is public since 2026-10-13). `main` is pushed and `v0.1` is tagged; the recipe has that commit's hash. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
 
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.
