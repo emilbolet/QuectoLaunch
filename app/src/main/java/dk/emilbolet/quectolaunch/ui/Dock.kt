@@ -40,6 +40,7 @@ import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
 import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.cellPosition
+import dk.emilbolet.quectolaunch.ui.theme.isDark
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -107,8 +108,14 @@ fun Dock(
         }
     }
 
-    val collapsedColor = panelColor(Panel.Dock, Color.White.copy(alpha = 0.2f))
+    // Closed it is a see-through tint over the wallpaper: light in the light theme, the open
+    // dock's own color in the dark one
     val expandedColor = panelColor(Panel.Dock, MaterialTheme.colorScheme.surfaceContainer)
+    val collapsedColor = panelColor(
+        Panel.Dock,
+        if (MaterialTheme.colorScheme.isDark) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f)
+        else Color.White.copy(alpha = 0.2f),
+    )
     val handleColor = MaterialTheme.colorScheme.onSurfaceVariant
     val rowHeight = dockRowHeight(labels)
 

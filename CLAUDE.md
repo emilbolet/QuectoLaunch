@@ -113,6 +113,7 @@ Patterns to keep:
 ## What step 3 does (keep this working)
 
 - The dock is a bottom sheet (`AnchoredDraggableState<DockValue>`, created in `LauncherApp`). Collapsed: one row of apps (5 by default). Expanded: it grows upwards to show a second row, turns solid, and dims the rest of the screen.
+- The closed dock is a see-through tint over the wallpaper: white at 20 % in the light theme, the open dock's color (`surfaceContainer`) at 60 % in the dark theme (until 2026-10-14 it was white in both, which the owner reported). The transparency slider scales either.
 - Dock spacing, measured with 5 icons on a 411 dp wide screen: icons are 52 dp, 14 dp from the dock's top and bottom edge and 13 dp from its left and right edge, with 27 dp between icons. The dock's cells are exactly as wide as the home grid's, so dock icons line up with the grid columns above when both have the same count; insetting the dock's ends would break that.
 - Gesture rule: a swipe up that starts on the dock expands it (the dock's `anchoredDraggable` consumes the drag); a swipe up anywhere else opens the drawer (`detectVerticalDragGestures` on the home screen).
 - The dock collapses on swipe down, tap outside, Back, Home and when returning from another app (`LauncherViewModel.homeResets`).
