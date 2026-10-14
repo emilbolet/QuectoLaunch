@@ -2,7 +2,7 @@
 # copy it to metadata/dk.emilbolet.quectolaunch.yml in a fork of
 # https://gitlab.com/fdroid/fdroiddata and open a merge request there.
 #
-# The commit below is tag v0.1.
+# The commits below are tags v0.1 and v0.2.
 # Not yet run through "fdroid lint" or "fdroid build".
 Categories:
   - System
@@ -24,8 +24,15 @@ Builds:
     gradle:
       - yes
 
+  - versionName: '0.2'
+    versionCode: 4
+    commit: 3d2fedf1f6ffd7e66f5a50dfe20afb0fba9f9100
+    subdir: app
+    gradle:
+      - yes
+
 AutoUpdateMode: Version
 # Only plain versions like v0.2; betas such as v0.2-beta1 are skipped
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: '0.1'
-CurrentVersionCode: 1
+CurrentVersion: '0.2'
+CurrentVersionCode: 4

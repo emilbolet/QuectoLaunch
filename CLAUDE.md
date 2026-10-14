@@ -264,7 +264,7 @@ The owner wants to submit the app to F-Droid. Done in the repo on 2026-10-13:
 - `fdroid/dk.emilbolet.quectolaunch.yml` is a draft of the build recipe for the `fdroiddata` merge request. It has not been through `fdroid lint` or `fdroid build`.
 - `./gradlew assembleRelease` works (unsigned APK) and the result runs on the emulator; lint has no errors.
 
-Still open, and the owner's to do: open the merge request on GitLab (the GitHub repo is public since 2026-10-13). `main` is pushed and `v0.1` is tagged; the recipe has that commit's hash. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
+Still open, and the owner's to do: open the merge request on GitLab (the GitHub repo is public since 2026-10-13). `main` is pushed and `v0.1` and `v0.2` are tagged; the recipe has both commits' hashes. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
 
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.
