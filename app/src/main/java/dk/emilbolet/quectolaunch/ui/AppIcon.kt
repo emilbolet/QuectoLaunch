@@ -64,12 +64,16 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
             modifier
                 .size(size)
                 .background(Color.White.copy(alpha = 0.35f), RoundedCornerShape(size * 0.28f)),
-            verticalArrangement = Arrangement.Center,
+            // Small icons with a gap between them and a wider margin around them
+            verticalArrangement = Arrangement.spacedBy(size * FOLDER_GAP, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             entry.apps.take(4).chunked(2).forEach { pair ->
-                Row(Modifier.size(width = size * 0.76f, height = size * 0.38f)) {
-                    pair.forEach { AppIcon(it.app, repository, size * 0.38f) }
+                Row(
+                    Modifier.size(width = size * (2 * FOLDER_ICON + FOLDER_GAP), height = size * FOLDER_ICON),
+                    horizontalArrangement = Arrangement.spacedBy(size * FOLDER_GAP),
+                ) {
+                    pair.forEach { AppIcon(it.app, repository, size * FOLDER_ICON) }
                 }
             }
         }
@@ -81,6 +85,10 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
         )
     }
 }
+
+/** A folder tile's small icons and the gap between them, as parts of the tile's size. */
+private const val FOLDER_ICON = 0.30f
+private const val FOLDER_GAP = 0.08f
 
 val MenuIconSize = 24.dp
 
