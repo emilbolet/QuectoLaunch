@@ -36,6 +36,7 @@
     <string name="drawer_layout_list">Liste</string>
     <string name="drawer_layout_note">Gitteret har lige så mange kolonner som startskærmen.</string>
     <string name="transparency">Gennemsigtighed</string>
+    <string name="transparency_none">Alt er dækkende</string>
     <string name="transparency_note">Hvor meget af baggrunden der kan ses gennem hver del. Menuer forbliver altid delvist dækkende, så de kan læses.</string>
     <string name="transparency_app_list">Appliste</string>
     <string name="transparency_dock">Dock</string>

@@ -74,7 +74,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, Change icon, App info, Uninstall), MenuIcon
     IconPicker.kt          Choosing one app's icon by hand from an icon pack (in-tree overlay)
-    SettingsScreen.kt      Theme, accent color, icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
+    SettingsScreen.kt      Theme, accent color, transparency (a sub-page), icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
     AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
     Panels.kt              Transparency of the panels (app list, dock, folder, menus, search bar): colors, text color, LauncherMenu
@@ -222,7 +222,8 @@ Patterns to keep:
 
 ## Transparency (keep this working)
 
-- Settings → "Transparency" has one slider per panel, 0–100 % in steps of 5, default 0 %: App list, Dock (closed and open), Folders (the popup), Long-press menus, Search bar (the widget). `Panel` is the enum; `LauncherSettings.panelOpacity` maps a panel to 1 − transparency (missing = solid) and is provided as `LocalPanelOpacity`. The owner first got a single slider for all and asked for separate ones the same day (2026-10-13).
+- Settings → "Transparency" is a page of its own (since 2026-10-14, the owner's request): the main settings page shows a row summing up the see-through panels ("All solid" when none), which opens it. Back or the arrow returns to the main page, still scrolled where it was; Home closes settings, and the next opening starts on the main page. The page is local state in `SettingsScreen` (`SettingsPage`, with its own `BackHandler`), not in the view model.
+- The page has one slider per panel, 0–100 % in steps of 5, default 0 %: App list, Dock (closed and open), Folders (the popup), Long-press menus, Search bar (the widget). `Panel` is the enum; `LauncherSettings.panelOpacity` maps a panel to 1 − transparency (missing = solid) and is provided as `LocalPanelOpacity`. The owner first got a single slider for all and asked for separate ones the same day (2026-10-13).
 - At 0 % everything looks as it did before the setting existed. Settings, the widget list, the Home screens overview and the icon picker are always solid.
 - A panel background goes through `panelColor(panel, ...)`. A new panel should too, and a new long-press menu must be a `LauncherMenu`, not a bare `DropdownMenu`.
 - What must not show through a see-through panel is hidden instead: the home screen fades out while the app list is open (always) or a folder is open (when the folder's transparency is above 0), and the grid fades as the dock opens, by as much as the dock lets through. Sticky letter headings in the app list become ordinary ones when the app list is see-through, because apps would scroll visibly under them.

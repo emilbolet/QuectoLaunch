@@ -1,5 +1,11 @@
 package dk.emilbolet.quectolaunch.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +74,7 @@ import dk.emilbolet.quectolaunch.data.ThemeMode
 import dk.emilbolet.quectolaunch.ui.theme.wallpaperColorsAvailable
 import kotlin.math.roundToInt
 
-/** Theme, accent color, transparency, icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
+/** Theme, accent color, transparency (a page of its own), icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
@@ -75,234 +83,339 @@ fun SettingsScreen(
     onChange: (LauncherSettings) -> Unit,
     onClose: () -> Unit,
 ) {
+    // The transparency sliders are a page of their own; Back returns from it to the main page
+    var page by rememberSaveable { mutableStateOf(SettingsPage.Main) }
+    BackHandler(enabled = page != SettingsPage.Main) { page = SettingsPage.Main }
+    // Kept out here so the main page is still scrolled to where it was on the way back
+    val mainScroll = rememberScrollState()
+
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Column(
-            Modifier
-                .systemBarsPadding()
-                .verticalScroll(rememberScrollState())
-        ) {
-            Row(
-                Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onClose) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
+        AnimatedContent(
+            targetState = page,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "settings page",
+        ) { shown ->
+            when (shown) {
+                SettingsPage.Main -> MainSettings(
+                    settings = settings,
+                    iconPacks = iconPacks,
+                    controls = controls,
+                    scrollState = mainScroll,
+                    onChange = onChange,
+                    onOpenTransparency = { page = SettingsPage.Transparency },
+                    onClose = onClose,
+                )
+                SettingsPage.Transparency -> TransparencySettings(
+                    settings = settings,
+                    onChange = onChange,
+                    onBack = { page = SettingsPage.Main },
+                )
+            }
+        }
+    }
+}
+
+private enum class SettingsPage { Main, Transparency }
+
+@Composable
+private fun MainSettings(
+    settings: LauncherSettings,
+    iconPacks: List<IconPackInfo>,
+    controls: SystemControls,
+    scrollState: ScrollState,
+    onChange: (LauncherSettings) -> Unit,
+    onOpenTransparency: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        Modifier
+            .systemBarsPadding()
+            .verticalScroll(scrollState)
+    ) {
+        SettingsHeader(stringResource(R.string.launcher_settings), onBack = onClose)
+
+        Section(stringResource(R.string.theme)) {
+            Choices(
+                options = ThemeMode.entries,
+                selected = settings.themeMode,
+                label = {
+                    stringResource(
+                        when (it) {
+                            ThemeMode.System -> R.string.theme_system
+                            ThemeMode.Light -> R.string.theme_light
+                            ThemeMode.Dark -> R.string.theme_dark
+                        }
                     )
-                }
-                Text(
-                    text = stringResource(R.string.launcher_settings),
-                    modifier = Modifier.padding(start = 4.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
+                },
+                onSelect = { onChange(settings.copy(themeMode = it)) },
+            )
+        }
 
-            Section(stringResource(R.string.theme)) {
-                Choices(
-                    options = ThemeMode.entries,
-                    selected = settings.themeMode,
-                    label = {
-                        stringResource(
-                            when (it) {
-                                ThemeMode.System -> R.string.theme_system
-                                ThemeMode.Light -> R.string.theme_light
-                                ThemeMode.Dark -> R.string.theme_dark
-                            }
-                        )
-                    },
-                    onSelect = { onChange(settings.copy(themeMode = it)) },
-                )
+        Section(stringResource(R.string.accent_color)) {
+            // Sliders for a color of one's own show once the rainbow swatch is tapped,
+            // and from the start if such a color is already in use
+            var customOpen by remember {
+                mutableStateOf(settings.accent != null && settings.accent !in LauncherSettings.ACCENTS)
             }
-
-            Section(stringResource(R.string.accent_color)) {
-                // Sliders for a color of one's own show once the rainbow swatch is tapped,
-                // and from the start if such a color is already in use
-                var customOpen by remember {
-                    mutableStateOf(settings.accent != null && settings.accent !in LauncherSettings.ACCENTS)
-                }
-                if (wallpaperColorsAvailable) {
-                    val useWallpaper = settings.accent == null
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .toggleable(
-                                value = useWallpaper,
-                                role = Role.Switch,
-                                onValueChange = { on ->
-                                    val accent = if (on) null else LauncherSettings.ACCENTS.first()
-                                    customOpen = false
-                                    onChange(settings.copy(accent = accent))
-                                },
-                            )
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.use_wallpaper_colors),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Switch(checked = useWallpaper, onCheckedChange = null)
-                    }
-                }
+            if (wallpaperColorsAvailable) {
+                val useWallpaper = settings.accent == null
                 Row(
                     Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // Before Android 12 there are no wallpaper colors, so the first one is the default
-                    val current = settings.accent
-                        ?: LauncherSettings.ACCENTS.first().takeUnless { wallpaperColorsAvailable }
-                    // First, so it isn't scrolled out of sight behind the presets
-                    Swatch(
-                        brush = Brush.sweepGradient(HueColors),
-                        name = stringResource(R.string.accent_custom),
-                        selected = customOpen,
-                        onClick = {
-                            customOpen = true
-                            // Starts from the color in use; leaves "wallpaper colors" if that was on
-                            if (settings.accent == null) {
-                                onChange(settings.copy(accent = LauncherSettings.ACCENTS.first()))
-                            }
-                        },
-                    )
-                    LauncherSettings.ACCENTS.forEachIndexed { index, accent ->
-                        Swatch(
-                            color = Color(accent),
-                            name = stringResource(R.string.accent_number, index + 1),
-                            selected = accent == current && !customOpen,
-                            onClick = {
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = useWallpaper,
+                            role = Role.Switch,
+                            onValueChange = { on ->
+                                val accent = if (on) null else LauncherSettings.ACCENTS.first()
                                 customOpen = false
                                 onChange(settings.copy(accent = accent))
                             },
                         )
-                    }
-                }
-                val custom = settings.accent
-                if (customOpen && custom != null) {
-                    AccentSliders(color = custom, onChange = { onChange(settings.copy(accent = it)) })
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.use_wallpaper_colors),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Switch(checked = useWallpaper, onCheckedChange = null)
                 }
             }
-
-            Section(stringResource(R.string.transparency)) {
-                Panel.entries.forEach { panel ->
-                    TransparencySlider(
-                        label = stringResource(
-                            when (panel) {
-                                Panel.AppList -> R.string.transparency_app_list
-                                Panel.Dock -> R.string.transparency_dock
-                                Panel.Folder -> R.string.transparency_folders
-                                Panel.Menu -> R.string.transparency_menus
-                                Panel.SearchBar -> R.string.transparency_search_bar
-                            }
-                        ),
-                        opacity = settings.panelOpacity[panel] ?: 1f,
-                        onChange = { onChange(settings.copy(panelOpacity = settings.panelOpacity + (panel to it))) },
+            Row(
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Before Android 12 there are no wallpaper colors, so the first one is the default
+                val current = settings.accent
+                    ?: LauncherSettings.ACCENTS.first().takeUnless { wallpaperColorsAvailable }
+                // First, so it isn't scrolled out of sight behind the presets
+                Swatch(
+                    brush = Brush.sweepGradient(HueColors),
+                    name = stringResource(R.string.accent_custom),
+                    selected = customOpen,
+                    onClick = {
+                        customOpen = true
+                        // Starts from the color in use; leaves "wallpaper colors" if that was on
+                        if (settings.accent == null) {
+                            onChange(settings.copy(accent = LauncherSettings.ACCENTS.first()))
+                        }
+                    },
+                )
+                LauncherSettings.ACCENTS.forEachIndexed { index, accent ->
+                    Swatch(
+                        color = Color(accent),
+                        name = stringResource(R.string.accent_number, index + 1),
+                        selected = accent == current && !customOpen,
+                        onClick = {
+                            customOpen = false
+                            onChange(settings.copy(accent = accent))
+                        },
                     )
                 }
+            }
+            val custom = settings.accent
+            if (customOpen && custom != null) {
+                AccentSliders(color = custom, onChange = { onChange(settings.copy(accent = it)) })
+            }
+        }
+
+        Section(stringResource(R.string.transparency)) {
+            NavigationRow(label = transparencySummary(settings), onClick = onOpenTransparency)
+        }
+
+        Section(stringResource(R.string.icon_pack)) {
+            // A pack that was chosen and then uninstalled counts as "default"
+            val chosen = settings.iconPack?.takeIf { name -> iconPacks.any { it.packageName == name } }
+            RadioRow(
+                label = stringResource(R.string.icon_pack_default),
+                selected = chosen == null,
+                onClick = { onChange(settings.copy(iconPack = null)) },
+            )
+            iconPacks.forEach { pack ->
+                RadioRow(
+                    label = pack.label,
+                    selected = chosen == pack.packageName,
+                    onClick = { onChange(settings.copy(iconPack = pack.packageName)) },
+                )
+            }
+            if (iconPacks.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.transparency_note),
+                    text = stringResource(R.string.icon_pack_none),
                     modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-
-            Section(stringResource(R.string.icon_pack)) {
-                // A pack that was chosen and then uninstalled counts as "default"
-                val chosen = settings.iconPack?.takeIf { name -> iconPacks.any { it.packageName == name } }
-                RadioRow(
-                    label = stringResource(R.string.icon_pack_default),
-                    selected = chosen == null,
-                    onClick = { onChange(settings.copy(iconPack = null)) },
-                )
-                iconPacks.forEach { pack ->
-                    RadioRow(
-                        label = pack.label,
-                        selected = chosen == pack.packageName,
-                        onClick = { onChange(settings.copy(iconPack = pack.packageName)) },
-                    )
-                }
-                if (iconPacks.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.icon_pack_none),
-                        modifier = Modifier.padding(top = 4.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Section(stringResource(R.string.grid_columns)) {
-                Choices(
-                    options = LauncherSettings.COLUMN_CHOICES.toList(),
-                    selected = settings.columns,
-                    label = { it.toString() },
-                    onSelect = { onChange(settings.copy(columns = it)) },
-                )
-            }
-
-            Section(stringResource(R.string.grid_rows)) {
-                Choices(
-                    options = LauncherSettings.ROW_CHOICES.toList(),
-                    selected = settings.rows,
-                    label = { it.toString() },
-                    onSelect = { onChange(settings.copy(rows = it)) },
-                )
-            }
-
-            Section(stringResource(R.string.dock_slots)) {
-                Choices(
-                    options = LauncherSettings.DOCK_SLOT_CHOICES.toList(),
-                    selected = settings.dockSlots,
-                    label = { it.toString() },
-                    onSelect = { onChange(settings.copy(dockSlots = it)) },
-                )
-                SwitchRow(
-                    label = stringResource(R.string.dock_labels),
-                    checked = settings.dockLabels,
-                    onCheckedChange = { onChange(settings.copy(dockLabels = it)) },
-                )
-                Text(
-                    text = stringResource(R.string.grid_size_note),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Section(stringResource(R.string.drawer_layout)) {
-                Choices(
-                    options = DrawerLayout.entries,
-                    selected = settings.drawerLayout,
-                    label = {
-                        stringResource(
-                            when (it) {
-                                DrawerLayout.Grid -> R.string.drawer_layout_grid
-                                DrawerLayout.List -> R.string.drawer_layout_list
-                            }
-                        )
-                    },
-                    onSelect = { onChange(settings.copy(drawerLayout = it)) },
-                )
-                Text(
-                    text = stringResource(R.string.drawer_layout_note),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Section(stringResource(R.string.gestures)) {
-                GestureSettings(
-                    enabled = settings.gestures,
-                    controls = controls,
-                    onEnabledChange = { onChange(settings.copy(gestures = it)) },
-                )
-            }
         }
+
+        Section(stringResource(R.string.grid_columns)) {
+            Choices(
+                options = LauncherSettings.COLUMN_CHOICES.toList(),
+                selected = settings.columns,
+                label = { it.toString() },
+                onSelect = { onChange(settings.copy(columns = it)) },
+            )
+        }
+
+        Section(stringResource(R.string.grid_rows)) {
+            Choices(
+                options = LauncherSettings.ROW_CHOICES.toList(),
+                selected = settings.rows,
+                label = { it.toString() },
+                onSelect = { onChange(settings.copy(rows = it)) },
+            )
+        }
+
+        Section(stringResource(R.string.dock_slots)) {
+            Choices(
+                options = LauncherSettings.DOCK_SLOT_CHOICES.toList(),
+                selected = settings.dockSlots,
+                label = { it.toString() },
+                onSelect = { onChange(settings.copy(dockSlots = it)) },
+            )
+            SwitchRow(
+                label = stringResource(R.string.dock_labels),
+                checked = settings.dockLabels,
+                onCheckedChange = { onChange(settings.copy(dockLabels = it)) },
+            )
+            Text(
+                text = stringResource(R.string.grid_size_note),
+                modifier = Modifier.padding(top = 12.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Section(stringResource(R.string.drawer_layout)) {
+            Choices(
+                options = DrawerLayout.entries,
+                selected = settings.drawerLayout,
+                label = {
+                    stringResource(
+                        when (it) {
+                            DrawerLayout.Grid -> R.string.drawer_layout_grid
+                            DrawerLayout.List -> R.string.drawer_layout_list
+                        }
+                    )
+                },
+                onSelect = { onChange(settings.copy(drawerLayout = it)) },
+            )
+            Text(
+                text = stringResource(R.string.drawer_layout_note),
+                modifier = Modifier.padding(top = 12.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Section(stringResource(R.string.gestures)) {
+            GestureSettings(
+                enabled = settings.gestures,
+                controls = controls,
+                onEnabledChange = { onChange(settings.copy(gestures = it)) },
+            )
+        }
+    }
+}
+
+/** Settings → Transparency: one slider per panel. */
+@Composable
+private fun TransparencySettings(
+    settings: LauncherSettings,
+    onChange: (LauncherSettings) -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        Modifier
+            .systemBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        SettingsHeader(stringResource(R.string.transparency), onBack = onBack)
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Panel.entries.forEach { panel ->
+                TransparencySlider(
+                    label = panelLabel(panel),
+                    opacity = settings.panelOpacity[panel] ?: 1f,
+                    onChange = { onChange(settings.copy(panelOpacity = settings.panelOpacity + (panel to it))) },
+                )
+            }
+            Text(
+                text = stringResource(R.string.transparency_note),
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** What the main page shows for transparency: "All solid", or each see-through panel with its value. */
+@Composable
+private fun transparencySummary(settings: LauncherSettings): String {
+    val seeThrough = Panel.entries.mapNotNull { panel ->
+        val transparency = ((1f - (settings.panelOpacity[panel] ?: 1f)) * 100).roundToInt()
+        if (transparency == 0) null
+        else panelLabel(panel) + " " + stringResource(R.string.percent, transparency)
+    }
+    return if (seeThrough.isEmpty()) stringResource(R.string.transparency_none)
+    else seeThrough.joinToString(", ")
+}
+
+@Composable
+private fun panelLabel(panel: Panel) = stringResource(
+    when (panel) {
+        Panel.AppList -> R.string.transparency_app_list
+        Panel.Dock -> R.string.transparency_dock
+        Panel.Folder -> R.string.transparency_folders
+        Panel.Menu -> R.string.transparency_menus
+        Panel.SearchBar -> R.string.transparency_search_bar
+    }
+)
+
+/** A page's title with a back arrow in front. */
+@Composable
+private fun SettingsHeader(title: String, onBack: () -> Unit) {
+    Row(
+        Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+            )
+        }
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 4.dp),
+            style = MaterialTheme.typography.titleLarge,
+        )
+    }
+}
+
+/** A row that opens a page of its own: what is set there, and an arrow. */
+@Composable
+private fun NavigationRow(label: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
