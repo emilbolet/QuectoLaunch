@@ -1,0 +1,6 @@
+- Accentfarve: vælg en hvilken som helst farve med skyderne Farve og Farvestyrke
+- Gennemsigtighed: en skyder hver for applisten, docken, mapper, menuer og søgefeltet, på deres egen side i indstillingerne
+- Ikonpakker: tilpasning af apps, som pakken ikke dækker, og kalender- og urikoner, der følger dato og klokkeslæt
+- "Skift ikon" i menuen ved langt tryk på en app
+- Den lukkede dock er mørk i det mørke tema
+- Mere luft omkring de små ikoner på en mappe

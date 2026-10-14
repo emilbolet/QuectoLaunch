@@ -1,0 +1,6 @@
+- Accent color: pick any color with the Color and Vividness sliders
+- Transparency: one slider each for the app list, dock, folders, menus and search bar, on their own settings page
+- Icon packs: styling for apps a pack doesn't cover, calendar and clock icons that follow the date and time
+- "Change icon" in an app's long-press menu: any icon from a pack for that app
+- The closed dock is dark in the dark theme
+- More space around the small icons on a folder
