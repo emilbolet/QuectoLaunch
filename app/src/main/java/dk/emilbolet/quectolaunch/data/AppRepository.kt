@@ -1,6 +1,7 @@
 package dk.emilbolet.quectolaunch.data
 
 import android.app.SearchManager
+import android.provider.AlarmClock
 import android.content.ComponentName
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -321,6 +322,16 @@ class AppRepository(private val context: Context) {
         } catch (e: ActivityNotFoundException) {
             // No search app installed. We don't pick a search engine for the user.
             Toast.makeText(context, R.string.no_search_app, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Opens the phone's clock app; every clock app answers "show alarms". */
+    fun openClock() {
+        val clock = Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(clock)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, R.string.no_clock_app, Toast.LENGTH_SHORT).show()
         }
     }
 }

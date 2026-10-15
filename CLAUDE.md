@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, and the clock and search bar as widgets on the grid. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, the clock and search bar as widgets on the grid, and (2026-10-15) a tap on the clock opening the clock app. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -211,7 +211,7 @@ Patterns to keep:
 ## Clock and search bar as widgets (keep this working)
 
 - The clock and the search bar are "built-in widgets": `HomeItem.builtIn` is `clock` or `search` (`BuiltInWidget`), and the UI gets a `WidgetEntry` with `builtIn` set and no `appWidgetId`/`info`. `HomeItem.isWidget` is true for both kinds, so every widget rule (spans, nothing dropped on them, not in the dock or folders, move, resize, hidden outside a smaller grid) applies unchanged.
-- They are plain composables (`BuiltInWidgetContent`), drawn by `WidgetLayer`/`WidgetCell` in place of the `AndroidView`. No widget host, no Android widget ID. Long-press goes through `dragState.longPress` like everything else; the menu is Resize and Remove. A tap on the search bar opens the drawer with the keyboard up; a tap on the clock does nothing.
+- They are plain composables (`BuiltInWidgetContent`), drawn by `WidgetLayer`/`WidgetCell` in place of the `AndroidView`. No widget host, no Android widget ID. Long-press goes through `dragState.longPress` like everything else; the menu is Resize and Remove. A tap on the search bar opens the drawer with the keyboard up; a tap on the clock opens the phone's clock app (`AppRepository.openClock`: `AlarmClock.ACTION_SHOW_ALARMS`, which every clock app answers, so no `<queries>` entry is needed; a toast if none does; Android asks which app when several answer and none is the default).
 - The clock's text follows the widget's size (the date is dropped when it is very low); the search bar is at most 48 dp high.
 - Add again: the Widgets list starts with a "QuectoLaunch" group (Clock, Search bar). A new one is a full row wide and one row high and goes to the first free row from the current page on. More than one of each is allowed.
 - One-time step, also how a new installation gets them. Before, both were drawn outside the grid on every page. Now:
@@ -239,7 +239,7 @@ Nothing here is started; ask the owner before picking one.
 - Reordering apps inside a folder.
 - Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
 - A hint when a widget drop or resize is refused because the cells are taken (today it is silently ignored).
-- Clock widget: opening the clock app on tap, a choice of styles. Search widget: a narrow icon-only form.
+- Clock widget: a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
 - Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.

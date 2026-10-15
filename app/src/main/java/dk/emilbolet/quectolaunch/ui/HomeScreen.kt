@@ -332,6 +332,7 @@ fun HomeScreen(
                         dragState = dragState,
                         resizingId = resizingId,
                         onSearch = { onOpenDrawer(true) },
+                        onClock = repository::openClock,
                         onResizingChange = { resizingId = it },
                         onResize = onResizeWidget,
                         onRemove = onRemove,

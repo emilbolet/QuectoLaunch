@@ -64,6 +64,8 @@ fun BoxScope.WidgetLayer(
     resizingId: Long?,
     /** A tap on the built-in search bar. */
     onSearch: () -> Unit,
+    /** A tap on the built-in clock. */
+    onClock: () -> Unit,
     onResizingChange: (Long?) -> Unit,
     onResize: (WidgetEntry, spanX: Int, spanY: Int) -> Unit,
     onRemove: (WidgetEntry) -> Unit,
@@ -96,6 +98,7 @@ fun BoxScope.WidgetLayer(
                     widthDp = (cellWidth * widget.spanX - WidgetPadding * 2).value,
                     heightDp = (cellHeight * widget.spanY - WidgetPadding * 2).value,
                     onSearch = onSearch,
+                    onClock = onClock,
                     onStartResize = { onResizingChange(widget.id) },
                     onRemove = { onRemove(widget) },
                 )
@@ -128,6 +131,7 @@ private fun WidgetCell(
     widthDp: Float,
     heightDp: Float,
     onSearch: () -> Unit,
+    onClock: () -> Unit,
     onStartResize: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -154,7 +158,12 @@ private fun WidgetCell(
                     // Same long-press entry point as icons and Android widgets
                     .pointerInput(builtIn) {
                         detectTapGestures(
-                            onTap = { if (builtIn == BuiltInWidget.Search) onSearch() },
+                            onTap = {
+                                when (builtIn) {
+                                    BuiltInWidget.Search -> onSearch()
+                                    BuiltInWidget.Clock -> onClock()
+                                }
+                            },
                             onLongPress = {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 dragState.longPress(DragSource.Placed(current), current.id)

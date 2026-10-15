@@ -61,7 +61,7 @@ fun builtInWidgetLabel(widget: BuiltInWidget): String = stringResource(
     }
 )
 
-/** Time and date in white over the wallpaper; the text follows the size of the widget. */
+/** Time and date in white over the wallpaper; the text follows the size of the widget. A tap opens the clock app (see WidgetLayer). */
 @Composable
 private fun ClockWidget(modifier: Modifier = Modifier) {
     val context = LocalContext.current

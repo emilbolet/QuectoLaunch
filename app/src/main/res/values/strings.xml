@@ -12,6 +12,7 @@
     <string name="set_default">Set as default home app</string>
     <string name="no_search_app">No app on this phone can search the web</string>
     <string name="cant_open">Couldn\'t open this app</string>
+    <string name="no_clock_app">No clock app on this phone</string>
     <string name="remove">Remove</string>
     <string name="folder">Folder</string>
     <string name="home_empty_hint">Swipe up for your apps. Hold an app and drag it here to pin it.</string>
