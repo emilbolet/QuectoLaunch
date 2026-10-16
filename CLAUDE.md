@@ -266,7 +266,14 @@ The owner wants to submit the app to F-Droid. Done in the repo on 2026-10-13:
 - `fdroid/dk.emilbolet.quectolaunch.yml` is a draft of the build recipe for the `fdroiddata` merge request. It has not been through `fdroid lint` or `fdroid build`.
 - `./gradlew assembleRelease` works (unsigned APK) and the result runs on the emulator; lint has no errors.
 
-Still open, and the owner's to do: open the merge request on GitLab (the GitHub repo is public since 2026-10-13). `main` is pushed and `v0.1` and `v0.2` are tagged; the recipe has both commits' hashes. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it. `ic_launcher_foreground.xml` still calls itself a placeholder icon.
+Still open, and the owner's to do: open the merge request on GitLab (the GitHub repo is public since 2026-10-13). `main` is pushed and `v0.1` and `v0.2` are tagged; the recipe has both commits' hashes. Not checked: whether F-Droid's build server supports this toolchain (AGP 9.4.1, Gradle 9.8.1, compileSdk 37); only the Android Studio JDK 25 has ever built it.
+
+### App icon
+
+- A white rocket on sky blue (`#0BA4E7`), from the owner's icon pack (2026-10-16; the source files were in `~/Downloads/quectolaunch-icon-pack`, outside the repo). It replaced a placeholder 3×3 grid.
+- The adaptive icon keeps the whole design in its background layer (`mipmap-*/ic_launcher_background.png`) with a transparent foreground. The pack's own background put the rocket outside the 66 dp safe zone (the tip and flame touched a round mask's edge), so the PNGs in the repo are rebuilt from the pack's 1024 px master at 75 % (the design spans 81 of the 108 dp), padded with the same blue.
+- `mipmap-*/ic_launcher_monochrome.png` is the rocket's shape for themed icons (Android 13+), made from the master by how far each pixel is from the blue. It isn't in the owner's pack.
+- There are no plain `ic_launcher.png` files: with minSdk 26 the adaptive icon is always used. The store icon is the pack's `play-store-512.png` (`fastlane/.../en-US/images/icon.png`).
 
 ### Out of scope
 - The Microsoft Launcher "Feed" page (news, calendar, to-do cards) has been deliberately dropped.
