@@ -3,7 +3,7 @@ QuectoLaunch is a small, simple home screen (launcher) for Android.
 <b>Home screen</b>
 <ul>
 <li>A grid of apps, folders and widgets over your wallpaper, on as many home screens as you like</li>
-<li>The clock and the search bar are widgets too: move, resize or remove them</li>
+<li>The clock and the search bar are widgets too: move, resize or remove them. Tap the clock to open your clock app</li>
 <li>An overview of all home screens where you add, reorder and remove them</li>
 <li>A dock that you swipe up for a second row of apps, with app names if you want them</li>
 </ul>
@@ -13,7 +13,7 @@ QuectoLaunch is a small, simple home screen (launcher) for Android.
 <li>All apps sorted A–Z by your phone's language, as a grid or a list</li>
 <li>A letter strip on the right edge that jumps straight to a letter</li>
 <li>Search as you type; Enter opens the top result</li>
-<li>A Personal / Work switch on phones with a work profile</li>
+<li>Personal and work apps on phones with a work profile: tap the switch or swipe sideways</li>
 </ul>
 
 <b>Make it yours</b>

@@ -1,0 +1,6 @@
+Beta: til afprøvning, forvent småfejl.
+
+- Nyt appikon: en raket
+- Tryk på urwidgetten for at åbne din ur-app
+- Applisten: stryg til siden mellem Personlig og Arbejde
+- "Pladsen er optaget", når en widget ikke kan flyttes eller ændre størrelse dertil, eller en app slippes på en widget

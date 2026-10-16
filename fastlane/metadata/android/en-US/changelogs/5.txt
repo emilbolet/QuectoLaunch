@@ -1,0 +1,6 @@
+Beta: for testing, expect rough edges.
+
+- New app icon: a rocket
+- Tap the clock widget to open your clock app
+- App list: swipe sideways between Personal and Work apps
+- "That space is taken" when a widget can't be moved or resized there, or an app is dropped onto a widget
