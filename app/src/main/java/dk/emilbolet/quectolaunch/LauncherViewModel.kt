@@ -394,6 +394,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun drop(source: DragSource, target: DropTarget) {
         viewModelScope.launch {
+            if (target.container > 0) {
+                reorderFolder(source, target)
+                return@launch
+            }
             val done = when (source) {
                 is DragSource.FromDrawer ->
                     homeDao.drop(null, source.app.key, target.container, target.page, target.position)
@@ -406,6 +410,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             if (!done) showSpaceTaken()
         }
+    }
+
+    /** An app dragged within its open folder, dropped at place [DropTarget.position]. */
+    private suspend fun reorderFolder(source: DragSource, target: DropTarget) {
+        val entry = (source as? DragSource.Placed)?.entry ?: return
+        val apps = layout.value.folder(target.container)?.apps ?: return
+        if (apps.none { it.id == entry.id }) return
+        val ids = apps.map { it.id }.filter { it != entry.id }.toMutableList()
+        ids.add(target.position.coerceIn(0, ids.size), entry.id)
+        homeDao.reorderFolder(target.container, ids)
     }
 
     fun remove(entry: HomeEntry) {

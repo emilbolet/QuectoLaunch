@@ -89,5 +89,6 @@ sealed interface DragSource {
 }
 
 /** A cell on the home grid ([HomeItem.HOME]) or in the dock ([HomeItem.DOCK]); see [cellPosition].
- * [page] is the home page, and always 0 for the dock. */
+ * [page] is the home page, and always 0 for the dock. When [container] is a folder's id,
+ * [position] is the place in that folder's order (0 = first). */
 data class DropTarget(val container: Long, val position: Int, val page: Int = 0)

@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, the clock and search bar as widgets on the grid, (2026-10-15) a tap on the clock opening the clock app, (2026-10-16) swiping sideways between Personal and Work in the app list, and a "That space is taken" hint when a widget move or resize, or an app dropped onto a widget, is refused. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Beta 0.3-beta1 (versionCode 5, 2026-10-16) has the clock tap, the Personal/Work swipe, the "That space is taken" hint and the new app icon. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, the clock and search bar as widgets on the grid, (2026-10-15) a tap on the clock opening the clock app, (2026-10-16) swiping sideways between Personal and Work in the app list, and a "That space is taken" hint when a widget move or resize, or an app dropped onto a widget, is refused. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Beta 0.3-beta1 (versionCode 5, 2026-10-16) has the clock tap, the Personal/Work swipe, the "That space is taken" hint and the new app icon. Since then, on `main` only: reordering apps inside a folder. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -70,7 +70,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     WidgetPicker.kt        The launcher's own widgets, then installed widgets by app (in-tree overlay)
     PageManager.kt         "Home screens" overview: page previews, drag to reorder, add, remove (in-tree overlay)
     Dock.kt                Swipe-up dock (AnchoredDraggable): two app rows
-    FolderPopup.kt         Open folder with renamable title (in-tree overlay, not a dialog)
+    FolderPopup.kt         Open folder with renamable title, drag to reorder (in-tree overlay, not a dialog)
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, Change icon, App info, Uninstall), MenuIcon
     IconPicker.kt          Choosing one app's icon by hand from an icon pack (in-tree overlay)
@@ -104,11 +104,13 @@ Patterns to keep:
 
 - Home: grid of pinned apps (5 columns × 7 rows by default, the top and bottom row normally holding the clock and search bar) with labels, a search bar (a widget; opens the drawer with the keyboard up), a small chevron (opens the drawer), and a 5-slot dock without labels.
 - Layout is saved in Room (`home.db`, table `home_items`: container = home (-1) / dock (-2) / folder id, page, position, appKey, title). Home and dock positions = row × 100 + column (`cellPosition`), so they don't depend on the grid or dock size.
-- Long-press an app in the drawer or on home: menu with app shortcuts (default launcher only), Remove (home only), App info, Uninstall. Keep holding and move to drag; the drawer/folder closes and the icon follows the finger; the cell under the finger lights up.
+- Long-press an app in the drawer or on home: menu with app shortcuts (default launcher only), Remove (home only), App info, Uninstall. Keep holding and move to drag; the drawer closes and the icon follows the finger; the cell under the finger lights up. A folder stays open while the finger is over it (see below).
 - Drop rules (`HomeDao.drop`): empty cell → place; app on app → new folder; app on folder → joins it; folder on something → swap. Dropping outside the grid and dock cancels.
 - Folders: tap to open a popup, tap the title to rename, drag apps out. A folder left with one app turns back into that app.
+- Reordering inside a folder (since 2026-10-16): drag an app within the open folder; the others make room as it moves, and the drop saves the order (`HomeDao.reorderFolder`, which renumbers the contents 0, 1, 2…; disabled apps that aren't shown keep their order after the rest). The folder tile on home shows the first four in that order. Moving the finger off the folder card closes the folder (`LauncherApp` watches `DragState.folderBounds`), and the drag carries on to the home screen or dock as before.
+- How: `FolderPopup` reports its card, its whole grid of apps (`folderGridBounds`, unclipped, so a scrolled folder still lines up), the column count and app count to `DragState`. Over the card, `DragState.target` is `DropTarget(container = folder id, position = place in the order)`, and `LauncherViewModel.drop` sends any target whose container is a folder to `reorderFolder`. Each cell is `key`ed by its item ID so its pressed look moves with it. After the drop the popup keeps showing the new order until the saved one arrives.
 - Uninstalled apps are removed from the layout (on the removal callback, and at startup for apps removed while we weren't running). Disabled/unavailable apps are only hidden.
-- Not done yet: reordering inside a folder.
+- Not done: scrolling a long folder while dragging inside it, moving an app from the drawer straight into an open folder.
 
 ## What step 3 does (keep this working)
 
@@ -239,7 +241,6 @@ Patterns to keep:
 
 Nothing here is started; ask the owner before picking one.
 
-- Reordering apps inside a folder.
 - Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
 - Clock widget: a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.

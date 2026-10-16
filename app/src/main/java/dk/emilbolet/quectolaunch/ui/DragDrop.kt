@@ -64,6 +64,17 @@ class DragState {
     /** The visible part of each row of dock apps; empty for rows hidden while the dock is collapsed. */
     val dockRowBounds = mutableStateListOf(*Array(DOCK_ROWS) { Rect.Zero })
 
+    /** The open folder, reported by FolderPopup; null when no folder is open. */
+    var folderId by mutableStateOf<Long?>(null)
+
+    /** The open folder's card; a drag that leaves it closes the folder. */
+    var folderBounds by mutableStateOf(Rect.Zero)
+
+    /** All rows of apps in the open folder, including any scrolled out of view. */
+    var folderGridBounds by mutableStateOf(Rect.Zero)
+    var folderColumns by mutableIntStateOf(1)
+    var folderCount by mutableIntStateOf(0)
+
     /** The cell the dragged item would land on if released now. */
     val target: DropTarget?
         get() = if (dragging) targetAt(position) else null
@@ -87,6 +98,16 @@ class DragState {
     }
 
     private fun targetAt(point: Offset): DropTarget? {
+        // Over an open folder: the place in the folder's order, counting the dragged app's own
+        folderId?.let { id ->
+            if (folderBounds.contains(point)) {
+                if (folderCount == 0) return null
+                val rows = (folderCount + folderColumns - 1) / folderColumns
+                val column = cellIndex(point.x - folderGridBounds.left, folderGridBounds.width, folderColumns)
+                val row = cellIndex(point.y - folderGridBounds.top, folderGridBounds.height, rows)
+                return DropTarget(id, minOf(row * folderColumns + column, folderCount - 1))
+            }
+        }
         val widget = heldWidget
         // The open dock lies over the bottom of the grid, so it's checked first
         dockRowBounds.forEachIndexed { row, bounds ->

@@ -23,14 +23,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -38,7 +47,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppRepository
+import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.FolderEntry
 import dk.emilbolet.quectolaunch.data.HomeEntry
 import dk.emilbolet.quectolaunch.data.Panel
@@ -48,6 +59,7 @@ private const val FOLDER_COLUMNS = 4
 /**
  * An open folder: a card over a dimmed home screen with a title you can tap to rename.
  * Drawn inside the launcher's own layout (not a dialog window) so icons can be dragged out of it.
+ * Dragging an app within the card reorders the folder; the others make room as it moves.
  */
 @Composable
 fun FolderPopup(
@@ -59,6 +71,36 @@ fun FolderPopup(
     onClose: () -> Unit,
 ) {
     val noRipple = remember { MutableInteractionSource() }
+
+    // Tell the drag code where this folder is, so a drag over it lands in the folder's order
+    DisposableEffect(folder.id) {
+        dragState.folderId = folder.id
+        onDispose {
+            dragState.folderId = null
+            dragState.folderBounds = Rect.Zero
+            dragState.folderGridBounds = Rect.Zero
+        }
+    }
+    SideEffect {
+        dragState.folderColumns = FOLDER_COLUMNS
+        dragState.folderCount = folder.apps.size
+    }
+
+    // While one of its apps is dragged over the folder: the order it would have if dropped now
+    val held = (dragState.source as? DragSource.Placed)?.entry
+    val target = dragState.target?.takeIf { it.container == folder.id }
+    val live: List<AppEntry>? = if (dragState.dragging && target != null) {
+        folder.apps.firstOrNull { it.id == held?.id }?.let { moving ->
+            folder.apps.filter { it.id != moving.id }.toMutableList()
+                .apply { add(target.position.coerceIn(0, size), moving) }
+        }
+    } else {
+        null
+    }
+    // After the drop, keep showing the new order until the saved one arrives
+    var dropped by remember(folder.apps) { mutableStateOf<List<AppEntry>?>(null) }
+    LaunchedEffect(live) { if (live != null) dropped = live }
+    val shown = live ?: dropped ?: folder.apps
 
     Box(
         Modifier
@@ -73,6 +115,7 @@ fun FolderPopup(
             modifier = Modifier
                 .padding(24.dp)
                 .widthIn(max = 360.dp)
+                .onGloballyPositioned { dragState.folderBounds = it.boundsInRoot() }
                 // Taps on the card itself shouldn't close the folder
                 .clickable(interactionSource = noRipple, indication = null, onClick = {}),
             shape = RoundedCornerShape(28.dp),
@@ -81,25 +124,38 @@ fun FolderPopup(
             Column(Modifier.padding(16.dp)) {
                 FolderTitle(folder, onRename)
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    folder.apps.chunked(FOLDER_COLUMNS).forEach { row ->
-                        Row(Modifier.fillMaxWidth()) {
-                            row.forEach { entry ->
-                                EntryCell(
-                                    entry = entry,
-                                    repository = repository,
-                                    dragState = dragState,
-                                    onClick = {
-                                        onClose()
-                                        repository.launch(entry.app)
-                                    },
-                                    onRemove = { onRemove(entry) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(vertical = 8.dp),
-                                    onWallpaper = panelNeedsLightText(Panel.Folder),
-                                )
+                    // The whole grid, also any part scrolled out of view, so places line up
+                    Column(
+                        Modifier.onGloballyPositioned {
+                            dragState.folderGridBounds = Rect(
+                                it.positionInRoot(),
+                                Size(it.size.width.toFloat(), it.size.height.toFloat()),
+                            )
+                        }
+                    ) {
+                        shown.chunked(FOLDER_COLUMNS).forEach { row ->
+                            Row(Modifier.fillMaxWidth()) {
+                                row.forEach { entry ->
+                                    // Keyed, so a cell's pressed look moves with its app when the order changes
+                                    key(entry.id) {
+                                        EntryCell(
+                                            entry = entry,
+                                            repository = repository,
+                                            dragState = dragState,
+                                            onClick = {
+                                                onClose()
+                                                repository.launch(entry.app)
+                                            },
+                                            onRemove = { onRemove(entry) },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(vertical = 8.dp),
+                                            onWallpaper = panelNeedsLightText(Panel.Folder),
+                                        )
+                                    }
+                                }
+                                repeat(FOLDER_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
                             }
-                            repeat(FOLDER_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }

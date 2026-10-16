@@ -307,6 +307,21 @@ abstract class HomeDao {
         return newPage // not reached: an empty page always has room
     }
 
+    /**
+     * Puts a folder's apps in the order of [ids]. Apps not in the list (hidden because they
+     * are disabled) keep their order after the others.
+     */
+    @Transaction
+    open suspend fun reorderFolder(folderId: Long, ids: List<Long>) {
+        val contents = inContainer(folderId)
+        val rank = ids.withIndex().associate { (index, id) -> id to index }
+        contents
+            .sortedBy { rank[it.id] ?: (ids.size + contents.indexOf(it)) }
+            .forEachIndexed { index, item ->
+                if (item.position != index) update(item.copy(position = index))
+            }
+    }
+
     /** Moves a widget, if the cells it would cover are free. Returns false if they aren't. */
     @Transaction
     open suspend fun moveWidget(id: Long, page: Int, position: Int): Boolean {

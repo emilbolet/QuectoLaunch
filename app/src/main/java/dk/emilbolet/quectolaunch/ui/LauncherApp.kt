@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,6 +87,14 @@ fun LauncherApp(
         }
     }
 
+    // An app dragged out of an open folder: close the folder as the finger leaves it
+    LaunchedEffect(dragState) {
+        snapshotFlow {
+            dragState.dragging && dragState.folderId != null &&
+                !dragState.folderBounds.contains(dragState.position)
+        }.collect { left -> if (left) viewModel.closeFolder() }
+    }
+
     // With a see-through app list or folder the home screen must not show behind it, only
     // the wallpaper
     val folderSeeThrough = (settings.panelOpacity[Panel.Folder] ?: 1f) < 1f
@@ -105,12 +114,11 @@ fun LauncherApp(
             .pointerInput(dragState) {
                 with(dragState) {
                     trackDrag(
-                        // Dragging always ends on the home screen, so get everything else out of the way.
-                        // The dock stays as it is: an icon may be on its way to or from the second row.
-                        onDragStart = {
-                            viewModel.closeDrawer()
-                            viewModel.closeFolder()
-                        },
+                        // Dragging ends on the home screen, so get the drawer out of the way. An open
+                        // folder stays until the finger leaves it (see below), so its apps can be
+                        // reordered. The dock stays as it is: an icon may be on its way to or from
+                        // the second row.
+                        onDragStart = { viewModel.closeDrawer() },
                         onDrop = viewModel::drop,
                     )
                 }
