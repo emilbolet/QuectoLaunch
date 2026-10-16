@@ -12,6 +12,7 @@
     <string name="no_search_app">Ingen app på telefonen kan søge på nettet</string>
     <string name="cant_open">Appen kunne ikke åbnes</string>
     <string name="no_clock_app">Der er ingen ur-app på telefonen</string>
+    <string name="space_taken">Pladsen er optaget</string>
     <string name="remove">Fjern</string>
     <string name="folder">Mappe</string>
     <string name="home_empty_hint">Stryg op for at se dine apps. Hold på en app, og træk den herhen for at fastgøre den.</string>

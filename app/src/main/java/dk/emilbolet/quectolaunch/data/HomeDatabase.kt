@@ -159,20 +159,21 @@ abstract class HomeDao {
      *
      * Empty cell: the item goes there. App on app: the two become a folder.
      * App on folder: it joins the folder. A folder dropped on something swaps places with it.
+     * Returns false when the drop is refused because a widget covers the cell.
      */
     @Transaction
-    open suspend fun drop(itemId: Long?, appKey: String?, container: Long, page: Int, position: Int) {
+    open suspend fun drop(itemId: Long?, appKey: String?, container: Long, page: Int, position: Int): Boolean {
         val moving = itemId?.let { get(it) }
-        if (moving == null && appKey == null) return
-        if (moving != null && moving.isWidget) return // widgets move with moveWidget
+        if (moving == null && appKey == null) return true
+        if (moving != null && moving.isWidget) return true // widgets move with moveWidget
         // Nothing can be dropped onto a widget
         if (container == HomeItem.HOME) {
             val row = position / CELL_STRIDE
             val column = position % CELL_STRIDE
-            if (onPage(page).any { it.isWidget && it.overlaps(row, column, 1, 1) }) return
+            if (onPage(page).any { it.isWidget && it.overlaps(row, column, 1, 1) }) return false
         }
         val target = at(container, page, position)
-        if (moving != null && target?.id == moving.id) return
+        if (moving != null && target?.id == moving.id) return true
 
         fun placed(newContainer: Long, newPosition: Int, newPage: Int = 0): HomeItem =
             moving?.copy(container = newContainer, page = newPage, position = newPosition)
@@ -216,6 +217,7 @@ abstract class HomeDao {
 
         moving?.let { tidyFolder(it.container) }
         growPages()
+        return true
     }
 
     @Transaction
@@ -305,10 +307,10 @@ abstract class HomeDao {
         return newPage // not reached: an empty page always has room
     }
 
-    /** Moves a widget, if the cells it would cover are free. */
+    /** Moves a widget, if the cells it would cover are free. Returns false if they aren't. */
     @Transaction
-    open suspend fun moveWidget(id: Long, page: Int, position: Int) {
-        val widget = get(id) ?: return
+    open suspend fun moveWidget(id: Long, page: Int, position: Int): Boolean {
+        val widget = get(id) ?: return true
         val row = position / CELL_STRIDE
         val column = position % CELL_STRIDE
         val blocked = onPage(page).any {
@@ -318,16 +320,18 @@ abstract class HomeDao {
             update(widget.copy(page = page, position = position))
             growPages()
         }
+        return !blocked
     }
 
-    /** Changes a widget's size, if the cells it would cover are free. */
+    /** Changes a widget's size, if the cells it would cover are free. Returns false if they aren't. */
     @Transaction
-    open suspend fun resizeWidget(id: Long, spanX: Int, spanY: Int) {
-        val widget = get(id) ?: return
+    open suspend fun resizeWidget(id: Long, spanX: Int, spanY: Int): Boolean {
+        val widget = get(id) ?: return true
         val blocked = onPage(widget.page).any {
             it.id != id && it.overlaps(widget.row, widget.column, spanX, spanY)
         }
         if (!blocked) update(widget.copy(spanX = spanX, spanY = spanY))
+        return !blocked
     }
 
     private suspend fun pageCount(): Int = maxOf(storedPages() ?: 1, (lastPage() ?: 0) + 1)

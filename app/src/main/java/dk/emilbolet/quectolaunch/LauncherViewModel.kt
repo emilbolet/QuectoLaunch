@@ -1,12 +1,15 @@
 package dk.emilbolet.quectolaunch
 
 import android.app.Application
+import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dk.emilbolet.quectolaunch.R
 import dk.emilbolet.quectolaunch.data.Alphabet
 import dk.emilbolet.quectolaunch.data.AppChange
 import dk.emilbolet.quectolaunch.data.AppEntry
@@ -343,7 +346,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resizeWidget(entry: WidgetEntry, spanX: Int, spanY: Int) {
-        viewModelScope.launch { homeDao.resizeWidget(entry.id, spanX, spanY) }
+        viewModelScope.launch {
+            if (!homeDao.resizeWidget(entry.id, spanX, spanY)) showSpaceTaken()
+        }
+    }
+
+    private var spaceTakenShownAt = 0L
+
+    /**
+     * Says why a drop or resize did nothing. A resize handle asks again on every move while
+     * it is over a taken cell, so the hint shows at most once while the last one is up.
+     */
+    private fun showSpaceTaken() {
+        val now = SystemClock.elapsedRealtime()
+        if (now - spaceTakenShownAt < SPACE_TAKEN_HINT_MS) return
+        spaceTakenShownAt = now
+        Toast.makeText(getApplication(), R.string.space_taken, Toast.LENGTH_SHORT).show()
     }
 
     fun openSettings() {
@@ -376,17 +394,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun drop(source: DragSource, target: DropTarget) {
         viewModelScope.launch {
-            when (source) {
+            val done = when (source) {
                 is DragSource.FromDrawer ->
                     homeDao.drop(null, source.app.key, target.container, target.page, target.position)
                 is DragSource.Placed -> if (source.entry is WidgetEntry) {
-                    if (target.container == HomeItem.HOME) {
+                    target.container != HomeItem.HOME ||
                         homeDao.moveWidget(source.entry.id, target.page, target.position)
-                    }
                 } else {
                     homeDao.drop(source.entry.id, null, target.container, target.page, target.position)
                 }
             }
+            if (!done) showSpaceTaken()
         }
     }
 
@@ -401,3 +419,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { homeDao.rename(id, title.trim().ifEmpty { null }) }
     }
 }
+
+/** About as long as a short toast stays up. */
+private const val SPACE_TAKEN_HINT_MS = 2_000L
