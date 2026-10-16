@@ -6,7 +6,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 ## Status
 
-**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, the clock and search bar as widgets on the grid, and (2026-10-15) a tap on the clock opening the clock app. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
+**The original six-step roadmap is done**, plus six additions made afterwards: icons per dock row, the rename to QuectoLaunch with app ID `dk.emilbolet.quectolaunch`, multiple home pages, widgets, the grid layout for the app list, the "Home screens" overview for adding, reordering and removing pages, the Personal/Work switch in the app list, icons in the long-press menus, the clock and search bar as widgets on the grid, (2026-10-15) a tap on the clock opening the clock app, and (2026-10-16) swiping sideways between Personal and Work in the app list. The dock's quick toggles have been removed again. In beta 0.2-beta1: a custom accent color, and more icon pack support (styling of uncovered apps, calendar and clock icons, an icon per app). In beta 0.2-beta2 (versionCode 3): the transparency sliders. Release 0.2 (versionCode 4, 2026-10-14) adds the transparency page in settings, a dark closed dock in the dark theme and more space in folder tiles. Each has a "keep this working" section below. Everything is committed on `main` and pushed to `origin` (github.com/emilbolet/QuectoLaunch, public since 2026-10-13).
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
@@ -196,7 +196,9 @@ Patterns to keep:
 ## Personal and work apps (keep this working)
 
 - When any app has `AppInfo.isWorkProfile`, the app list shows a Personal / Work switch under the search field and lists only the chosen half. Without such apps there is no switch and the list is unchanged.
-- The A–Z strip only shows letters the chosen half has. Each half starts at the top when switched to.
+- The two halves are the two pages of a `HorizontalPager` in `AppDrawer`: swipe sideways between them, or tap the switch (which animates the pager). The switch flips as soon as a swipe is past halfway (`currentPage`); the view model's choice is updated when the pager settles (`settledPage`). Without work apps, or while searching, there is no pager.
+- The A–Z strip only shows letters the chosen half has; it consumes its touches, so dragging on it never turns the page. Each half starts at the top when switched to, because the pager drops the page that is off screen.
+- Dragging an app out of either half still works: the long-press starts the drag before the pager sees a sideways move.
 - Search looks through both halves whichever is chosen, and the switch is hidden while searching. Work apps are told apart by the briefcase badge on their icon.
 - The choice (`LauncherViewModel.drawerShowsWork`) lasts while the launcher is running; it starts on Personal and is not saved.
 - `isWorkProfile` is true for every profile other than the phone's own user, so apps from a Private Space or a cloned-apps profile would also land under "Work".
@@ -242,7 +244,7 @@ Nothing here is started; ask the owner before picking one.
 - Clock widget: a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
-- Work profile: swiping sideways between Personal and Work, a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
+- Work profile: a "pause work apps" button, remembering the choice across restarts, telling a Private Space apart from a work profile.
 - App list: a continuous grid without letter headings (Microsoft Launcher's "vertical grid"), its own column count, search results as a grid.
 
 ### GitHub releases

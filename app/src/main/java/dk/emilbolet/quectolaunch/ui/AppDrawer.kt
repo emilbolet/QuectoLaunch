@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -48,12 +50,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -106,15 +108,22 @@ fun AppDrawer(
 
     // Without a work profile there is no switch and nothing to filter
     val hasWork = remember(sections) { sections.any { section -> section.apps.any { it.isWorkProfile } } }
-    val shown = remember(sections, hasWork, showWork) {
-        if (!hasWork) {
-            sections
-        } else {
+    // Page 0 is the personal apps, page 1 the work apps
+    val halves = remember(sections) {
+        listOf(false, true).map { work ->
             sections.mapNotNull { section ->
-                val apps = section.apps.filter { it.isWorkProfile == showWork }
+                val apps = section.apps.filter { it.isWorkProfile == work }
                 if (apps.isEmpty()) null else section.copy(apps = apps)
             }
         }
+    }
+
+    // Swipe sideways between the halves, or tap the switch
+    val pagerState = rememberPagerState(initialPage = if (showWork) 1 else 0) { 2 }
+    val scope = rememberCoroutineScope()
+    val currentOnShowWorkChange by rememberUpdatedState(onShowWorkChange)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { currentOnShowWorkChange(it == 1) }
     }
 
     Surface(
@@ -143,7 +152,10 @@ fun AppDrawer(
                 },
             )
             if (hasWork && query.isBlank()) {
-                ProfileSwitch(showWork, onShowWorkChange)
+                // Follows the finger: flips once a swipe is past halfway
+                ProfileSwitch(pagerState.currentPage == 1) { work ->
+                    scope.launch { pagerState.animateScrollToPage(if (work) 1 else 0) }
+                }
             }
             Box(
                 Modifier
@@ -151,11 +163,15 @@ fun AppDrawer(
                     .fillMaxWidth()
                     .nestedScroll(rememberPullDownToClose(onClose))
             ) {
-                if (query.isBlank()) {
-                    // Each profile's list starts at the top
-                    key(hasWork && showWork) {
-                        AlphabeticalList(shown, layout, columns, repository, dragState)
+                if (query.isBlank() && hasWork) {
+                    // A page off screen is dropped, so each half starts at the top when shown
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                        Box(Modifier.fillMaxSize()) {
+                            AlphabeticalList(halves[page], layout, columns, repository, dragState)
+                        }
                     }
+                } else if (query.isBlank()) {
+                    AlphabeticalList(sections, layout, columns, repository, dragState)
                 } else {
                     SearchResults(results, query, repository, dragState)
                 }
