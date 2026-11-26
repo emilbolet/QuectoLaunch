@@ -1,0 +1,11 @@
+Beta: for testing, expect rough edges.
+
+New since beta 2:
+- Home pages no longer turn while a widget is being resized
+
+From earlier betas:
+- Folders: drag apps to reorder them
+- New app icon: a rocket
+- Tap the clock widget to open your clock app
+- App list: swipe sideways between Personal and Work apps
+- "That space is taken" when a widget can't be moved or resized there, or an app is dropped onto a widget
