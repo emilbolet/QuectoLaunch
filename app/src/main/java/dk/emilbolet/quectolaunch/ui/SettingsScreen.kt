@@ -58,6 +58,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.key
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -65,6 +68,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.AppInfo
+import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.Backup
 import dk.emilbolet.quectolaunch.data.DrawerLayout
 import dk.emilbolet.quectolaunch.data.IconPackInfo
@@ -77,11 +82,14 @@ import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
 
-/** Theme, accent color, transparency (a page of its own), icon pack, grid size, app list layout, gestures and backup. Opened by long-pressing empty space on the home screen. */
+/** Theme, accent color, transparency (a page of its own), icon pack, grid size, app list layout, hidden apps (a page of its own), gestures and backup. Opened by long-pressing empty space on the home screen. */
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
     iconPacks: List<IconPackInfo>,
+    hiddenApps: List<AppInfo>,
+    repository: AppRepository,
+    onShowApp: (AppInfo) -> Unit,
     controls: SystemControls,
     onChange: (LauncherSettings) -> Unit,
     onBackUp: () -> Unit,
@@ -108,6 +116,8 @@ fun SettingsScreen(
                     scrollState = mainScroll,
                     onChange = onChange,
                     onOpenTransparency = { page = SettingsPage.Transparency },
+                    hiddenCount = hiddenApps.size,
+                    onOpenHiddenApps = { page = SettingsPage.HiddenApps },
                     onBackUp = onBackUp,
                     onRestore = onRestore,
                     onClose = onClose,
@@ -117,12 +127,18 @@ fun SettingsScreen(
                     onChange = onChange,
                     onBack = { page = SettingsPage.Main },
                 )
+                SettingsPage.HiddenApps -> HiddenAppsSettings(
+                    apps = hiddenApps,
+                    repository = repository,
+                    onShowApp = onShowApp,
+                    onBack = { page = SettingsPage.Main },
+                )
             }
         }
     }
 }
 
-private enum class SettingsPage { Main, Transparency }
+private enum class SettingsPage { Main, Transparency, HiddenApps }
 
 @Composable
 private fun MainSettings(
@@ -132,6 +148,8 @@ private fun MainSettings(
     scrollState: ScrollState,
     onChange: (LauncherSettings) -> Unit,
     onOpenTransparency: () -> Unit,
+    hiddenCount: Int,
+    onOpenHiddenApps: () -> Unit,
     onBackUp: () -> Unit,
     onRestore: () -> Unit,
     onClose: () -> Unit,
@@ -320,6 +338,17 @@ private fun MainSettings(
             )
         }
 
+        Section(stringResource(R.string.hidden_apps)) {
+            NavigationRow(
+                label = if (hiddenCount == 0) {
+                    stringResource(R.string.hidden_apps_none)
+                } else {
+                    pluralStringResource(R.plurals.hidden_apps_count, hiddenCount, hiddenCount)
+                },
+                onClick = onOpenHiddenApps,
+            )
+        }
+
         Section(stringResource(R.string.gestures)) {
             GestureSettings(
                 enabled = settings.gestures,
@@ -339,6 +368,53 @@ private fun MainSettings(
                 summary = stringResource(R.string.backup_restore_summary),
                 onClick = onRestore,
             )
+        }
+    }
+}
+
+/** Settings → Hidden apps: the apps left out of the app list, each with a button to show it again. */
+@Composable
+private fun HiddenAppsSettings(
+    apps: List<AppInfo>,
+    repository: AppRepository,
+    onShowApp: (AppInfo) -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        Modifier
+            .systemBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        SettingsHeader(stringResource(R.string.hidden_apps), onBack = onBack)
+        Text(
+            text = stringResource(if (apps.isEmpty()) R.string.hidden_apps_empty else R.string.hidden_apps_note),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        apps.forEach { app ->
+            key(app.key) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppIcon(app, repository, 40.dp)
+                    Text(
+                        text = app.label,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    TextButton(onClick = { onShowApp(app) }) {
+                        Text(stringResource(R.string.unhide))
+                    }
+                }
+            }
         }
     }
 }

@@ -87,6 +87,7 @@ class SettingsStore(private val context: Context) {
     private val iconPackKey = stringPreferencesKey("icon_pack")
     private val gesturesKey = booleanPreferencesKey("gestures")
     private val rowsForBuiltInsKey = booleanPreferencesKey("rows_for_built_ins")
+    private val hiddenAppsKey = stringSetPreferencesKey("hidden_apps")
 
     val settings: Flow<LauncherSettings> = flow {
         addRowsForBuiltIns()
@@ -143,6 +144,19 @@ class SettingsStore(private val context: Context) {
             }
         }
     }.distinctUntilChanged()
+
+    /** Apps left out of the app list, by [AppInfo.key]. */
+    val hiddenApps: Flow<Set<String>> = context.dataStore.data
+        .map { prefs -> prefs[hiddenAppsKey].orEmpty() }
+        .distinctUntilChanged()
+
+    suspend fun setHidden(appKey: String, hidden: Boolean) {
+        context.dataStore.edit { prefs ->
+            val keys = prefs[hiddenAppsKey].orEmpty()
+            val updated = if (hidden) keys + appKey else keys - appKey
+            if (updated.isEmpty()) prefs.remove(hiddenAppsKey) else prefs[hiddenAppsKey] = updated
+        }
+    }
 
     /** Null goes back to the icon the app would have anyway. */
     suspend fun setIconChoice(appKey: String, choice: IconChoice?) {

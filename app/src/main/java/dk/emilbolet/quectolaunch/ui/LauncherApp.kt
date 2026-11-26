@@ -45,7 +45,8 @@ fun LauncherApp(
     onBackUp: () -> Unit,
     onRestore: () -> Unit,
 ) {
-    val sections by viewModel.sections.collectAsStateWithLifecycle()
+    // The app list leaves hidden apps out
+    val sections by viewModel.drawerSections.collectAsStateWithLifecycle()
     val layout by viewModel.layout.collectAsStateWithLifecycle()
     val drawerOpen = viewModel.drawerOpen
     val openFolder = viewModel.openFolderId?.let(layout::folder)
@@ -107,6 +108,7 @@ fun LauncherApp(
 
     CompositionLocalProvider(
         LocalChangeIcon provides viewModel::openIconPicker,
+        LocalHideApp provides viewModel::hideApp,
         LocalPanelOpacity provides settings.panelOpacity,
         LocalWallpaperColor provides rememberWallpaperColor(),
     ) {
@@ -183,9 +185,13 @@ fun LauncherApp(
 
         AnimatedVisibility(visible = viewModel.settingsOpen, enter = fadeIn(), exit = fadeOut()) {
             val iconPacks by viewModel.iconPacks.collectAsStateWithLifecycle()
+            val hiddenApps by viewModel.hiddenApps.collectAsStateWithLifecycle()
             SettingsScreen(
                 settings = settings,
                 iconPacks = iconPacks,
+                hiddenApps = hiddenApps,
+                repository = viewModel.repository,
+                onShowApp = viewModel::showApp,
                 controls = viewModel.controls,
                 onChange = viewModel::updateSettings,
                 onBackUp = onBackUp,

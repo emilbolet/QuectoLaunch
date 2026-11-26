@@ -10,7 +10,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
-Where we left off (2026-11-26): 0.3-beta4 is the latest release. Backup and restore (chosen by the owner for 0.3) is in 0.3-beta4. Hidden apps is the other candidate. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. On 2026-11-26 the owner reported that the launcher had been stable in weeks of daily use on the Pixel; their one wish so far was that the pages shouldn't scroll while a widget is being resized (done, in 0.3-beta4). The Personal/Work switch works well on the Pixel with their second profile; they haven't tried Danish sorting there (no apps starting with Æ, Ø or Å). Checking Danish sorting on the emulator found "Aa" names getting a stray second A section; fixed in 0.3-beta4. The F-Droid merge request is not opened yet.
+Where we left off (2026-11-26): 0.3-beta4 is the latest release. Backup and restore (chosen by the owner for 0.3) is in 0.3-beta4. Hidden apps (the other candidate) is built and committed, not yet released. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. On 2026-11-26 the owner reported that the launcher had been stable in weeks of daily use on the Pixel; their one wish so far was that the pages shouldn't scroll while a widget is being resized (done, in 0.3-beta4). The Personal/Work switch works well on the Pixel with their second profile; they haven't tried Danish sorting there (no apps starting with Æ, Ø or Å). Checking Danish sorting on the emulator found "Aa" names getting a stray second A section; fixed in 0.3-beta4. The F-Droid merge request is not opened yet.
 
 ### How we work
 
@@ -77,8 +77,8 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, Change icon, App info, Uninstall), MenuIcon
     IconPicker.kt          Choosing one app's icon by hand from an icon pack (in-tree overlay)
-    SettingsScreen.kt      Theme, accent color, transparency (a sub-page), icon pack, grid size, app list layout, gestures with the accessibility disclosure, backup (in-tree overlay); RestoreDialog
-    AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
+    SettingsScreen.kt      Theme, accent color, transparency (a sub-page), icon pack, grid size, app list layout, hidden apps (a sub-page), gestures with the accessibility disclosure, backup (in-tree overlay); RestoreDialog
+    AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble (gets LauncherViewModel.drawerSections: hidden apps already left out)
     AlphabetScroller.kt    The A–Z strip
     Panels.kt              Transparency of the panels (app list, dock, folder, menus, search bar): colors, text color, LauncherMenu
     theme/Theme.kt         Material 3; wallpaper colors on Android 12+ or a scheme built from the accent color
@@ -147,7 +147,7 @@ Patterns to keep:
 - Calendar icons: `<calendar component=".." prefix="calendar_"/>` uses the drawable `prefix` + day of the month. Clock icons: `<dynamic-clock drawable=".." hourLayerIndex=".." minuteLayerIndex=".." secondLayerIndex=".." defaultHour=".." defaultMinute=".."/>` names a layer drawable whose hand layers turn with their level; the levels are set the way Android's own launcher does it. The second hand is hidden, because icons are bitmaps redrawn once a minute.
 - `AppRepository.refreshTimeIcons()` runs once a minute while the launcher is started (`LauncherApp`) and drops the cached calendar icons when the day has changed and the clock icons every time, then bumps `iconVersion`.
 - An icon for one app, picked by hand: the app menu has "Change icon" whenever an icon pack is installed (`AppRepository.hasIconPacks`). `IconPicker` shows every icon of a pack (`drawable.xml` plus the names in `appfilter.xml`), with the ones named like the app first, a search field, chips to switch pack when several are installed, and "Use the normal icon". The choice is saved per `AppInfo.key` in DataStore as `icon_choice:<key>` = `pack/drawable` (`SettingsStore.iconChoices`), applies everywhere the app is shown, wins over the selected pack, and works with no pack selected. If its pack is uninstalled the app gets its normal icon; the saved choice is kept.
-- The menu reaches the picker through `LocalChangeIcon` (a CompositionLocal provided in `LauncherApp`) instead of a callback passed through every screen. It is the only CompositionLocal of ours.
+- The menu reaches the picker through `LocalChangeIcon` (a CompositionLocal provided in `LauncherApp`) instead of a callback passed through every screen. `LocalHideApp` (hidden apps) works the same way; together with `LocalPanelOpacity` and `LocalWallpaperColor` those are our only CompositionLocals.
 - Not done: a pack's own icon categories in the picker, cleaning up saved choices for uninstalled apps, picking an image file as icon.
 - To test without a real pack: build a tiny app with an activity filtering `org.adw.launcher.THEMES` (`android:hasCode="false"` and `android.app.Activity` as the activity class is enough), a `res/xml/appfilter.xml`, a `res/xml/drawable.xml` and a few drawables. For a dynamic clock: a `layer-list` of `rotate` drawables with `toDegrees` 5000 (hour) and 60000 (minute).
 
@@ -251,11 +251,20 @@ Patterns to keep:
 - `AppInfo.key` contains the user ID (`#0` for the phone's own user), so a work-profile app restores to a profile with the same ID.
 - Tested on the emulator: backup to Downloads, restore after changing the grid (layout, folder order and settings back), a file that isn't a backup, an edited backup with a missing app, a folder whose second app was missing, and 2 skipped widgets. Not tested: restoring with Android widgets on the current layout (their IDs are given back), Danish text on screen, a real phone, moving between the GitHub and F-Droid builds.
 
+## Hidden apps (keep this working)
+
+- Long-press an app in the app list (grid or list, search results too) → "Hide" (`AppMenu(hideable = true)`, icon `ic_visibility_off`). A toast says where to get it back. The menu on the home screen and dock has no "Hide".
+- The owner's choices (2026-11-26): hidden everywhere in the app list, search included (not only the list, as Microsoft Launcher does); icons on the home screen, dock and in folders stay; Settings → "Hidden apps" lists them with a "Show" button each.
+- Saved in DataStore as the string set `hidden_apps` of `AppInfo.key`s (`SettingsStore.hiddenApps`, `setHidden`), so backups include it, and an app is hidden per profile (the work copy of an app separately).
+- `LauncherViewModel.drawerSections` is `sections` without hidden apps (letters left empty are dropped, so the A–Z strip follows). The home layout still uses the full `sections`, which is why home icons of hidden apps keep working. `hiddenApps` (installed hidden apps, in list order) feeds the settings page.
+- Settings → "Hidden apps" shows "None" or "N apps" and opens a sub-page like Transparency (`SettingsPage.HiddenApps`).
+- Not done: removing an uninstalled app's key from `hidden_apps` (harmless: it isn't listed, and comes back hidden if reinstalled), hiding from the home screen menu, a lock or PIN.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
 
-- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, more gestures with choosable actions.
+- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, more gestures with choosable actions.
 - Backup: keeping Android widgets (would need re-binding each one, with Android's permission dialog per widget), an automatic backup now and then.
 - Clock widget: a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.

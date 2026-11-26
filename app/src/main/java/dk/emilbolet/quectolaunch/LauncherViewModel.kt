@@ -86,6 +86,32 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** All apps, sorted and grouped by letter. */
     val sections: StateFlow<List<AppSection>> = _sections.asStateFlow()
 
+    /** Apps hidden from the app list, by [AppInfo.key]. */
+    private val hiddenKeys: StateFlow<Set<String>> = settingsStore.hiddenApps
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** What the app list shows: [sections] without the hidden apps (and letters left empty). */
+    val drawerSections: StateFlow<List<AppSection>> =
+        combine(_sections, hiddenKeys) { sections, hidden ->
+            if (hidden.isEmpty()) {
+                sections
+            } else {
+                sections.mapNotNull { section ->
+                    val shown = section.apps.filterNot { it.key in hidden }
+                    if (shown.isEmpty()) null else AppSection(section.letter, shown)
+                }
+            }
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** The hidden apps that are installed, in the app list's order, for settings. */
+    val hiddenApps: StateFlow<List<AppInfo>> =
+        combine(_sections, hiddenKeys) { sections, hidden ->
+            sections.flatMap { section -> section.apps.filter { it.key in hidden } }
+        }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     /** The home grid and dock; items whose app is missing or disabled are left out. */
     val layout: StateFlow<HomeLayout> =
         flow {
@@ -465,6 +491,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private fun toast(text: Int) {
         Toast.makeText(getApplication(), text, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Leaves [app] out of the app list. Its icons on the home screen stay. */
+    fun hideApp(app: AppInfo) {
+        viewModelScope.launch { settingsStore.setHidden(app.key, true) }
+        Toast.makeText(getApplication(), R.string.app_hidden, Toast.LENGTH_LONG).show()
+    }
+
+    fun showApp(app: AppInfo) {
+        viewModelScope.launch { settingsStore.setHidden(app.key, false) }
     }
 
     fun updateSettings(value: LauncherSettings) {

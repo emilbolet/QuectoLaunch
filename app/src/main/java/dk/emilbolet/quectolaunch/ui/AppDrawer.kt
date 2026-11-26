@@ -419,6 +419,7 @@ private fun AppRow(app: AppInfo, repository: AppRepository, dragState: DragState
             repository = repository,
             expanded = dragState.menuKey == menuKey,
             onDismiss = dragState::closeMenu,
+            hideable = true,
         )
     }
 }
@@ -464,6 +465,7 @@ private fun AppCell(app: AppInfo, repository: AppRepository, dragState: DragStat
             repository = repository,
             expanded = dragState.menuKey == menuKey,
             onDismiss = dragState::closeMenu,
+            hideable = true,
         )
     }
 }

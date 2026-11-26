@@ -13,6 +13,7 @@ QuectoLaunch er en lille, enkel startskærm (launcher) til Android.
 <li>Alle apps sorteret efter telefonens sprog, så Æ, Ø og Å står til sidst, som gitter eller liste</li>
 <li>En bogstavstribe i højre side, der hopper direkte til et bogstav</li>
 <li>Søg, mens du skriver; Enter åbner det øverste resultat</li>
+<li>Skjul apps, du ikke bruger, fra listen; deres ikoner på startskærmen bliver</li>
 <li>Skift mellem Personlig og Arbejde på telefoner med arbejdsprofil: tryk på knappen eller stryg til siden</li>
 </ul>
 

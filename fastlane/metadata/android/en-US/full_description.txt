@@ -13,6 +13,7 @@ QuectoLaunch is a small, simple home screen (launcher) for Android.
 <li>All apps sorted A–Z by your phone's language, as a grid or a list</li>
 <li>A letter strip on the right edge that jumps straight to a letter</li>
 <li>Search as you type; Enter opens the top result</li>
+<li>Hide apps you don't need from the list; their home screen icons stay</li>
 <li>Personal and work apps on phones with a work profile: tap the switch or swipe sideways</li>
 </ul>
 

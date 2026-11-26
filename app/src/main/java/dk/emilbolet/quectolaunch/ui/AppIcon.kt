@@ -24,7 +24,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -101,9 +103,18 @@ val MenuIconSize = 24.dp
  */
 val LocalChangeIcon = staticCompositionLocalOf<(AppInfo) -> Unit> { {} }
 
+/** Hides an app from the app list; provided at the root for the same reason as [LocalChangeIcon]. */
+val LocalHideApp = staticCompositionLocalOf<(AppInfo) -> Unit> { {} }
+
 /** The icon in front of a long-press menu item; the label next to it says what it does. */
 @Composable
 fun MenuIcon(icon: ImageVector) {
+    Icon(icon, contentDescription = null, modifier = Modifier.size(MenuIconSize))
+}
+
+/** The same, for one of our own vector drawables (icons the core set lacks). */
+@Composable
+fun MenuIcon(icon: Painter) {
     Icon(icon, contentDescription = null, modifier = Modifier.size(MenuIconSize))
 }
 
@@ -119,6 +130,8 @@ fun AppMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     onRemove: (() -> Unit)? = null,
+    /** Offers "Hide"; only in the app list, which is what hiding leaves the app out of. */
+    hideable: Boolean = false,
 ) {
     LauncherMenu(expanded = expanded, onDismissRequest = onDismiss) {
         val shortcuts by produceState(emptyList<AppShortcut>(), app.key) {
@@ -151,6 +164,17 @@ fun AppMenu(
                 onClick = {
                     onDismiss()
                     onRemove()
+                },
+            )
+        }
+        if (hideable) {
+            val hideApp = LocalHideApp.current
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.hide)) },
+                leadingIcon = { MenuIcon(painterResource(R.drawable.ic_visibility_off)) },
+                onClick = {
+                    onDismiss()
+                    hideApp(app)
                 },
             )
         }

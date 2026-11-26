@@ -98,4 +98,15 @@
         <item quantity="one">Sikkerhedskopien er gendannet. Tilføj den %1$d widget fra en anden app igen.</item>
         <item quantity="other">Sikkerhedskopien er gendannet. Tilføj de %1$d widgets fra andre apps igen.</item>
     </plurals>
+    <string name="hide">Skjul</string>
+    <string name="app_hidden">Skjult i applisten. Vis den igen under Indstillinger for startskærm → Skjulte apps.</string>
+    <string name="hidden_apps">Skjulte apps</string>
+    <string name="hidden_apps_none">Ingen</string>
+    <plurals name="hidden_apps_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="hidden_apps_note">Disse apps vises ikke i applisten eller dens søgning. Deres ikoner på startskærmen bliver, hvor de er.</string>
+    <string name="hidden_apps_empty">Ingen skjulte apps. Hold en app nede i applisten, og vælg Skjul for at skjule den.</string>
+    <string name="unhide">Vis</string>
 </resources>

@@ -100,4 +100,15 @@
         <item quantity="one">Backup restored. Add the %1$d widget from another app again.</item>
         <item quantity="other">Backup restored. Add the %1$d widgets from other apps again.</item>
     </plurals>
+    <string name="hide">Hide</string>
+    <string name="app_hidden">Hidden from the app list. Show it again in Launcher settings → Hidden apps.</string>
+    <string name="hidden_apps">Hidden apps</string>
+    <string name="hidden_apps_none">None</string>
+    <plurals name="hidden_apps_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <string name="hidden_apps_note">These apps are left out of the app list and its search. Their icons on the home screen stay.</string>
+    <string name="hidden_apps_empty">No hidden apps. To hide one, long-press it in the app list and choose Hide.</string>
+    <string name="unhide">Show</string>
 </resources>
