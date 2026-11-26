@@ -1,0 +1,10 @@
+Beta: til afprøvning, forvent småfejl.
+
+Nyt siden beta 4:
+- Skjul apps i applisten (hold nede, Skjul); vis dem igen under Indstillinger, Skjulte apps
+
+Nyt i beta 4:
+- Sikkerhedskopiér layout og indstillinger til en fil, og gendan dem
+- Når du trækker, viser ikonets egen form, hvor det lander
+- Startskærmene skifter ikke side, mens en widget ændrer størrelse
+- Applisten: navne, der starter med "Aa", står under Å

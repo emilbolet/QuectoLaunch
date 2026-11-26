@@ -1,0 +1,10 @@
+Beta: for testing, expect rough edges.
+
+New since beta 4:
+- Hide apps from the app list (long-press, Hide); get them back in Settings, Hidden apps
+
+New in beta 4:
+- Back up layout and settings to a file, and restore them
+- Dragging shows the icon's own shape where it will land
+- Home pages no longer turn while a widget is being resized
+- App list: in Danish, names starting with "Aa" are under Å
