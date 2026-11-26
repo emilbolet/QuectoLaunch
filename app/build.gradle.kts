@@ -16,8 +16,8 @@ android {
         applicationId = "dk.emilbolet.quectolaunch"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.3-beta3"
+        versionCode = 8
+        versionName = "0.3-beta4"
     }
 
     buildTypes {

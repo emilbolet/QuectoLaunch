@@ -1,0 +1,13 @@
+Beta: til afprøvning, forvent småfejl.
+
+Nyt siden beta 2:
+- Sikkerhedskopiér layout og indstillinger til en fil, og gendan dem
+- Når du trækker, viser ikonets egen form, hvor det lander
+- Startskærmene skifter ikke side, mens en widget ændrer størrelse
+- Applisten: navne, der starter med "Aa", står under Å
+
+Fra beta 1 og 2:
+- Mapper: træk apps for at ændre rækkefølgen
+- Nyt appikon: en raket
+- Tryk på uret for at åbne din ur-app
+- Applisten: stryg mellem Personlig og Arbejde
