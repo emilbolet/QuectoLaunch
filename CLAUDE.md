@@ -10,7 +10,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
-Where we left off (2026-10-16): 0.3-beta2 is the latest release. Proposed to the owner for 0.3, not yet chosen: backup and restore of layout and settings (matters for F-Droid, since switching between GitHub and F-Droid builds needs a reinstall), and hidden apps. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. The owner hasn't yet reported anything from their days of testing on the Pixel; ask.
+Where we left off (2026-10-16): 0.3-beta2 is the latest release. Proposed to the owner for 0.3, not yet chosen: backup and restore of layout and settings (matters for F-Droid, since switching between GitHub and F-Droid builds needs a reinstall), and hidden apps. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. On 2026-11-26 the owner reported that the launcher had been stable in weeks of daily use on the Pixel; their one wish so far was that the pages shouldn't scroll while a widget is being resized (done, not yet released).
 
 ### How we work
 
@@ -184,7 +184,7 @@ Patterns to keep:
 - A widget is a `HomeItem` with `appWidgetId`, `widgetProvider`, `spanX`, `spanY`; `position` is its top-left cell. `WidgetEntry` is what the UI gets. Widgets live on home pages only, never in the dock or folders.
 - Drawing: each page is the grid of `DropCell`s with `WidgetLayer` on top, which places an `AndroidView` (the `AppWidgetHostView`) over the cells the widget covers.
 - Long-press: `LauncherWidgetHostView` detects it in `onInterceptTouchEvent` (so it also works on the widget's buttons) and calls `dragState.longPress`, the same entry point as icons. Menu: Resize, Remove. Keep holding and move to drag; the cells it would cover light up, and the drop is refused unless they are all free.
-- Resize: handles on the right and bottom edge, one cell per step, only into free cells. Tap elsewhere or Back to finish.
+- Resize: handles on the right and bottom edge, one cell per step, only into free cells. Tap elsewhere or Back to finish. While the handles show, the pages can't be swiped (`userScrollEnabled` on the pager, since 2026-11-26, the owner's request); a swipe on empty space then ends the resize like a tap.
 - A refused move or resize, and an app dropped onto a widget, shows the toast "That space is taken" (`LauncherViewModel.showSpaceTaken`). `HomeDao.drop`, `moveWidget` and `resizeWidget` return false for these refusals. A resize handle asks again on every finger move over a taken cell, so the toast shows at most once every 2 seconds. Dropping outside the grid, or a widget over the dock, is a cancel, not a refusal, and stays silent. The handles use `systemGestureExclusion` because a full-width widget's handle sits in Android's Back-gesture zone.
 - Nothing can be dropped onto a widget (`HomeDao.drop` checks). Swiping pages over a widget works because Compose's `AndroidView` only hands moves to the view after the pager had its chance.
 - The host listens between `onStart` and `onStop`. Widget rows are removed (and the ID given back) when the widget is removed, its app is uninstalled, or its info is gone at startup.

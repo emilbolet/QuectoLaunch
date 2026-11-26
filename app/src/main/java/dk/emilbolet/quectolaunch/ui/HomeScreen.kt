@@ -306,7 +306,13 @@ fun HomeScreen(
             val gridWidth = maxWidth
             val gridHeight = maxHeight
 
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            // While a widget shows its resize handles the pages stay put, so a handle drag
+            // that wanders sideways (or a swipe beside it) can't turn the page away from it
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = resizingId == null,
+            ) { page ->
                 // The extra page shown while dragging has no entries yet
                 val entries = layout.pages.getOrNull(page).orEmpty()
                 Box(Modifier.fillMaxSize()) {
