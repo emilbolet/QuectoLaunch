@@ -42,6 +42,8 @@ fun LauncherApp(
     viewModel: LauncherViewModel,
     settings: LauncherSettings,
     onAddWidget: (PendingWidget) -> Unit,
+    onBackUp: () -> Unit,
+    onRestore: () -> Unit,
 ) {
     val sections by viewModel.sections.collectAsStateWithLifecycle()
     val layout by viewModel.layout.collectAsStateWithLifecycle()
@@ -186,7 +188,17 @@ fun LauncherApp(
                 iconPacks = iconPacks,
                 controls = viewModel.controls,
                 onChange = viewModel::updateSettings,
+                onBackUp = onBackUp,
+                onRestore = onRestore,
                 onClose = viewModel::closeSettings,
+            )
+        }
+
+        viewModel.pendingRestore?.let { backup ->
+            RestoreDialog(
+                backup = backup,
+                onConfirm = viewModel::confirmRestore,
+                onDismiss = viewModel::cancelRestore,
             )
         }
 

@@ -351,6 +351,41 @@ abstract class HomeDao {
 
     private suspend fun pageCount(): Int = maxOf(storedPages() ?: 1, (lastPage() ?: 0) + 1)
 
+    @Query("SELECT * FROM home_items")
+    protected abstract suspend fun all(): List<HomeItem>
+
+    @Query("DELETE FROM home_items")
+    protected abstract suspend fun deleteAll()
+
+    /** Everything saved and the page count, read together for a backup. */
+    @Transaction
+    open suspend fun snapshot(): Pair<List<HomeItem>, Int> = all() to pageCount()
+
+    /**
+     * Replaces the whole layout with [items] from a backup. Items get new IDs; folder contents
+     * follow their folder. Returns the Android widget IDs that were in the old layout, to be
+     * given back to Android.
+     */
+    @Transaction
+    open suspend fun replaceAll(items: List<HomeItem>, pages: Int): List<Int> {
+        val oldWidgetIds = widgets().mapNotNull { it.appWidgetId }
+        deleteAll()
+        val (top, inFolders) = items.partition { it.container <= 0 }
+        val newIds = top.associate { item ->
+            item.id to insert(item.copy(id = 0, appWidgetId = null, widgetProvider = null))
+        }
+        inFolders.forEach { item ->
+            // Contents of a folder that isn't in the file are dropped
+            val folder = newIds[item.container] ?: return@forEach
+            insert(item.copy(id = 0, container = folder, page = 0, appWidgetId = null, widgetProvider = null))
+        }
+        saveMeta(HomeMeta(pages = pages, layoutVersion = 1))
+        growPages()
+        // A folder left with one app or none, e.g. one whose contents were missing
+        top.filter { it.isFolder }.forEach { tidyFolder(newIds.getValue(it.id)) }
+        return oldWidgetIds
+    }
+
     /** After something was put on the spare page shown while dragging, that page is a real one. */
     private suspend fun growPages() {
         val count = pageCount()

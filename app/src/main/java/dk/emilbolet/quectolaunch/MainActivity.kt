@@ -2,8 +2,10 @@ package dk.emilbolet.quectolaunch
 
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,10 +14,38 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dk.emilbolet.quectolaunch.data.PendingWidget
 import dk.emilbolet.quectolaunch.ui.LauncherApp
 import dk.emilbolet.quectolaunch.ui.theme.LauncherTheme
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: LauncherViewModel by viewModels()
+
+    // Android's file picker, for backups. Registered here rather than in the settings
+    // screen, so the result still arrives if settings was closed in the meantime.
+    private val createBackup = registerForActivityResult(
+        ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE)
+    ) { uri -> onFilePicked(uri, viewModel::writeBackup) }
+
+    private val openBackup = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> onFilePicked(uri, viewModel::readBackup) }
+
+    private fun onFilePicked(uri: Uri?, use: (Uri) -> Unit) {
+        viewModel.pickingFile = false
+        uri?.let(use)
+    }
+
+    private fun backUp() {
+        viewModel.pickingFile = true
+        createBackup.launch(getString(R.string.backup_file_name, LocalDate.now().toString()))
+    }
+
+    private fun restore() {
+        viewModel.pickingFile = true
+        // Some file managers give .json files another type, so any file can be picked;
+        // one that isn't a backup is turned away when it is read
+        openBackup.launch(arrayOf(BACKUP_MIME_TYPE, "application/octet-stream", "text/plain", "*/*"))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +58,13 @@ class MainActivity : ComponentActivity() {
             // Nothing but wallpaper until the saved theme is known, so it never flashes the wrong one
             val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return@setContent
             LauncherTheme(settings) {
-                LauncherApp(viewModel, settings, onAddWidget = ::addWidget)
+                LauncherApp(
+                    viewModel,
+                    settings,
+                    onAddWidget = ::addWidget,
+                    onBackUp = ::backUp,
+                    onRestore = ::restore,
+                )
             }
         }
     }
@@ -100,6 +136,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            viewModel.pickingFile = false
             viewModel.goHome(toFirstPage = true)
         }
     }
@@ -108,11 +145,13 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         viewModel.widgets.stopListening()
-        viewModel.goHome()
+        // Settings stays open under the file picker, to be there when the user comes back
+        if (!viewModel.pickingFile) viewModel.goHome()
     }
 
     private companion object {
         const val REQUEST_BIND_WIDGET = 1
         const val REQUEST_CONFIGURE_WIDGET = 2
+        const val BACKUP_MIME_TYPE = "application/json"
     }
 }

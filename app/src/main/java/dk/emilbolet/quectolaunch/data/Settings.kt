@@ -2,14 +2,18 @@ package dk.emilbolet.quectolaunch.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
@@ -145,6 +149,36 @@ class SettingsStore(private val context: Context) {
         val key = stringPreferencesKey(ICON_CHOICE_PREFIX + appKey)
         context.dataStore.edit { prefs ->
             if (choice != null) prefs[key] = "${choice.pack}/${choice.drawable}" else prefs.remove(key)
+        }
+    }
+
+    /** Every saved entry by name, for a backup. */
+    suspend fun exportAll(): Map<String, Any> =
+        context.dataStore.data.first().asMap().mapKeys { (key, _) -> key.name }
+
+    /**
+     * Replaces every saved entry with [values] from a backup. The gestures switch keeps its
+     * current state: turning it on has to go through the accessibility disclosure.
+     */
+    suspend fun importAll(values: Map<String, Any>) {
+        context.dataStore.edit { prefs ->
+            val gestures = prefs[gesturesKey]
+            prefs.clear()
+            values.forEach { (name, value) ->
+                if (name == gesturesKey.name) return@forEach
+                when (value) {
+                    is Boolean -> prefs[booleanPreferencesKey(name)] = value
+                    is Int -> prefs[intPreferencesKey(name)] = value
+                    is Long -> prefs[longPreferencesKey(name)] = value
+                    is Float -> prefs[floatPreferencesKey(name)] = value
+                    is Double -> prefs[doublePreferencesKey(name)] = value
+                    is String -> prefs[stringPreferencesKey(name)] = value
+                    is Set<*> -> prefs[stringSetPreferencesKey(name)] = value.map { it.toString() }.toSet()
+                }
+            }
+            if (gestures != null) prefs[gesturesKey] = gestures
+            // The layout in a backup always has the clock and search bar on the grid
+            prefs[rowsForBuiltInsKey] = true
         }
     }
 

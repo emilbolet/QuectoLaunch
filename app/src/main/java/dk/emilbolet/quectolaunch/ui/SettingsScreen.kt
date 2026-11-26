@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import dk.emilbolet.quectolaunch.R
+import dk.emilbolet.quectolaunch.data.Backup
 import dk.emilbolet.quectolaunch.data.DrawerLayout
 import dk.emilbolet.quectolaunch.data.IconPackInfo
 import dk.emilbolet.quectolaunch.data.LauncherSettings
@@ -72,15 +73,19 @@ import dk.emilbolet.quectolaunch.data.Panel
 import dk.emilbolet.quectolaunch.data.SystemControls
 import dk.emilbolet.quectolaunch.data.ThemeMode
 import dk.emilbolet.quectolaunch.ui.theme.wallpaperColorsAvailable
+import java.text.DateFormat
+import java.util.Date
 import kotlin.math.roundToInt
 
-/** Theme, accent color, transparency (a page of its own), icon pack, grid size, app list layout and gestures. Opened by long-pressing empty space on the home screen. */
+/** Theme, accent color, transparency (a page of its own), icon pack, grid size, app list layout, gestures and backup. Opened by long-pressing empty space on the home screen. */
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
     iconPacks: List<IconPackInfo>,
     controls: SystemControls,
     onChange: (LauncherSettings) -> Unit,
+    onBackUp: () -> Unit,
+    onRestore: () -> Unit,
     onClose: () -> Unit,
 ) {
     // The transparency sliders are a page of their own; Back returns from it to the main page
@@ -103,6 +108,8 @@ fun SettingsScreen(
                     scrollState = mainScroll,
                     onChange = onChange,
                     onOpenTransparency = { page = SettingsPage.Transparency },
+                    onBackUp = onBackUp,
+                    onRestore = onRestore,
                     onClose = onClose,
                 )
                 SettingsPage.Transparency -> TransparencySettings(
@@ -125,6 +132,8 @@ private fun MainSettings(
     scrollState: ScrollState,
     onChange: (LauncherSettings) -> Unit,
     onOpenTransparency: () -> Unit,
+    onBackUp: () -> Unit,
+    onRestore: () -> Unit,
     onClose: () -> Unit,
 ) {
     Column(
@@ -318,7 +327,64 @@ private fun MainSettings(
                 onEnabledChange = { onChange(settings.copy(gestures = it)) },
             )
         }
+
+        Section(stringResource(R.string.backup)) {
+            ActionRow(
+                label = stringResource(R.string.backup_create),
+                summary = stringResource(R.string.backup_create_summary),
+                onClick = onBackUp,
+            )
+            ActionRow(
+                label = stringResource(R.string.backup_restore),
+                summary = stringResource(R.string.backup_restore_summary),
+                onClick = onRestore,
+            )
+        }
     }
+}
+
+/** A row that does something when tapped: what it does, and a line about it. */
+@Composable
+private fun ActionRow(label: String, summary: String, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 8.dp)
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = summary,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Asks before a backup replaces the layout and settings, and says what will happen. */
+@Composable
+fun RestoreDialog(backup: Backup, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val date = remember(backup.createdAt) {
+        DateFormat.getDateInstance(DateFormat.LONG).format(Date(backup.createdAt))
+    }
+    val text = buildString {
+        append(stringResource(R.string.restore_confirm_text, date))
+        if (backup.skippedWidgets > 0) {
+            append("\n\n")
+            append(stringResource(R.string.restore_confirm_widgets))
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.restore_confirm_title)) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.restore_confirm_button)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
 }
 
 /** Settings → Transparency: one slider per panel. */

@@ -1,6 +1,7 @@
 package dk.emilbolet.quectolaunch
 
 import android.app.Application
+import android.net.Uri
 import android.os.SystemClock
 import android.widget.Toast
 import androidx.compose.runtime.getValue
@@ -16,6 +17,7 @@ import dk.emilbolet.quectolaunch.data.AppEntry
 import dk.emilbolet.quectolaunch.data.AppInfo
 import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.AppSection
+import dk.emilbolet.quectolaunch.data.Backup
 import dk.emilbolet.quectolaunch.data.BuiltInWidget
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.DropTarget
@@ -386,6 +388,83 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Gives [app] an icon picked by hand; null goes back to its normal icon. */
     fun chooseIcon(app: AppInfo, choice: IconChoice?) {
         viewModelScope.launch { settingsStore.setIconChoice(app.key, choice) }
+    }
+
+    /**
+     * True while Android's file picker is open for a backup, so that the launcher stopping
+     * underneath it doesn't close settings.
+     */
+    var pickingFile = false
+
+    /** A backup that has been read and waits for the user to confirm the restore. */
+    var pendingRestore by mutableStateOf<Backup?>(null)
+        private set
+
+    /** Saves the layout and all settings to the file the user picked. */
+    fun writeBackup(uri: Uri) {
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching {
+                    val (items, pages) = homeDao.snapshot()
+                    val backup = Backup.fromLayout(
+                        items = items,
+                        pages = pages,
+                        settings = settingsStore.exportAll(),
+                        createdAt = System.currentTimeMillis(),
+                    )
+                    val resolver = getApplication<Application>().contentResolver
+                    // "wt" empties a file that is being overwritten
+                    resolver.openOutputStream(uri, "wt")!!.bufferedWriter().use { it.write(backup.toJson()) }
+                }.isSuccess
+            }
+            toast(if (saved) R.string.backup_saved else R.string.backup_failed)
+        }
+    }
+
+    /** Reads the backup the user picked; the restore waits for [confirmRestore]. */
+    fun readBackup(uri: Uri) {
+        viewModelScope.launch {
+            val backup = withContext(Dispatchers.IO) {
+                runCatching {
+                    val resolver = getApplication<Application>().contentResolver
+                    val text = resolver.openInputStream(uri)!!.bufferedReader().use { it.readText() }
+                    Backup.fromJson(text)
+                }.getOrNull()
+            }
+            if (backup == null) toast(R.string.restore_not_a_backup) else pendingRestore = backup
+        }
+    }
+
+    fun cancelRestore() {
+        pendingRestore = null
+    }
+
+    /** Replaces the layout and settings with the backup's, then shows the first home screen. */
+    fun confirmRestore() {
+        val backup = pendingRestore ?: return
+        pendingRestore = null
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                // Settings first, so the layout arrives on a grid of the right size
+                settingsStore.importAll(backup.settings)
+                homeDao.replaceAll(backup.items, backup.pages).forEach(widgets::deleteId)
+                // Apps the backup has but this phone doesn't
+                homeDao.removeApps { key -> !repository.isInstalled(key) }
+            }
+            goHome(toFirstPage = true)
+            val message = if (backup.skippedWidgets > 0) {
+                getApplication<Application>().resources.getQuantityString(
+                    R.plurals.restore_done_widgets, backup.skippedWidgets, backup.skippedWidgets,
+                )
+            } else {
+                getApplication<Application>().getString(R.string.restore_done)
+            }
+            Toast.makeText(getApplication(), message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun toast(text: Int) {
+        Toast.makeText(getApplication(), text, Toast.LENGTH_SHORT).show()
     }
 
     fun updateSettings(value: LauncherSettings) {

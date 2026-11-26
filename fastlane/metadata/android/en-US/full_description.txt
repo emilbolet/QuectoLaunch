@@ -23,6 +23,7 @@ QuectoLaunch is a small, simple home screen (launcher) for Android.
 <li>Icon packs (ADW/Nova style), and any icon from a pack for a single app</li>
 <li>Grid size and number of dock icons</li>
 <li>Long-press menus with app shortcuts, App info and Uninstall</li>
+<li>Back up your layout and settings to a file and restore them later, or on another phone</li>
 </ul>
 
 <b>Optional gestures</b>

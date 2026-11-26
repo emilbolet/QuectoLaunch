@@ -80,4 +80,22 @@
         <item quantity="other">De %1$d elementer på den fjernes fra startskærmen. Dine apps bliver ved med at være installeret.</item>
     </plurals>
     <string name="cancel">Annuller</string>
+    <string name="backup">Sikkerhedskopi</string>
+    <string name="backup_create">Sikkerhedskopiér layout og indstillinger</string>
+    <string name="backup_create_summary">Gemmer en fil med dine startskærme, dock, mapper og indstillinger</string>
+    <string name="backup_restore">Gendan fra en sikkerhedskopi</string>
+    <string name="backup_restore_summary">Erstatter dine startskærme og indstillinger med dem fra en sikkerhedskopi</string>
+    <string name="backup_file_name">QuectoLaunch sikkerhedskopi %1$s.json</string>
+    <string name="backup_saved">Sikkerhedskopien er gemt</string>
+    <string name="backup_failed">Sikkerhedskopien kunne ikke gemmes</string>
+    <string name="restore_not_a_backup">Filen er ikke en sikkerhedskopi fra QuectoLaunch</string>
+    <string name="restore_confirm_title">Gendan denne sikkerhedskopi?</string>
+    <string name="restore_confirm_text">Dine startskærme, dock, mapper og indstillinger erstattes med dem fra sikkerhedskopien fra %1$s. Apps, der ikke er installeret på denne telefon, udelades.</string>
+    <string name="restore_confirm_widgets">Widgets fra andre apps kan ikke sikkerhedskopieres. Tilføj dem igen bagefter.</string>
+    <string name="restore_confirm_button">Gendan</string>
+    <string name="restore_done">Sikkerhedskopien er gendannet</string>
+    <plurals name="restore_done_widgets">
+        <item quantity="one">Sikkerhedskopien er gendannet. Tilføj den %1$d widget fra en anden app igen.</item>
+        <item quantity="other">Sikkerhedskopien er gendannet. Tilføj de %1$d widgets fra andre apps igen.</item>
+    </plurals>
 </resources>

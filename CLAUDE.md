@@ -10,7 +10,7 @@ The owner is in Denmark and uses a Danish phone, so Danish sorting and text matt
 
 Nothing is in progress. What could come next is under "Ideas and leftovers"; the owner picks.
 
-Where we left off (2026-11-26): 0.3-beta3 is the latest release. Next, chosen by the owner: backup and restore of layout and settings for 0.3 (matters for F-Droid, since switching between GitHub and F-Droid builds needs a reinstall). Hidden apps is the other candidate. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. On 2026-11-26 the owner reported that the launcher had been stable in weeks of daily use on the Pixel; their one wish so far was that the pages shouldn't scroll while a widget is being resized (done, in 0.3-beta3). The Personal/Work switch works well on the Pixel with their second profile; they haven't tried Danish sorting there (no apps starting with Æ, Ø or Å). Checking Danish sorting on the emulator found "Aa" names getting a stray second A section; fixed, not yet released. The F-Droid merge request is not opened yet.
+Where we left off (2026-11-26): 0.3-beta3 is the latest release. Backup and restore (chosen by the owner for 0.3) is built and committed, not yet released. Hidden apps is the other candidate. Before tagging the final `v0.3`: a changelog `<versionCode>.txt` without the beta line, `versionName = "0.3"`, and the new commit hash in the F-Droid recipe (`fdroid/dk.emilbolet.quectolaunch.yml`), as was done for 0.2. On 2026-11-26 the owner reported that the launcher had been stable in weeks of daily use on the Pixel; their one wish so far was that the pages shouldn't scroll while a widget is being resized (done, in 0.3-beta3). The Personal/Work switch works well on the Pixel with their second profile; they haven't tried Danish sorting there (no apps starting with Æ, Ø or Å). Checking Danish sorting on the emulator found "Aa" names getting a stray second A section; fixed, not yet released. The F-Droid merge request is not opened yet.
 
 ### How we work
 
@@ -51,7 +51,7 @@ The project folder is still called `SimpleLauncher`. The `mobile-mcp` server is 
 
 ```
 app/src/main/java/dk/emilbolet/quectolaunch/
-  MainActivity.kt          Edge-to-edge, goes back to plain home on Home press (onNewIntent) and onStop; widget bind/configure results
+  MainActivity.kt          Edge-to-edge, goes back to plain home on Home press (onNewIntent) and onStop; widget bind/configure results; file pickers for backups
   GestureService.kt        AccessibilityService used only for lock screen and open notifications
   LauncherViewModel.kt     App sections, home layout and settings (StateFlow); drawerOpen, query, drawerShowsWork, openFolderId, settingsOpen (Compose state)
   data/
@@ -62,6 +62,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     HomeDatabase.kt        Room: HomeItem and HomeMeta (page count) entities, HomeDao (drop/remove/folder/widget/page rules live here, in transactions)
     HomeModels.kt          Grid constants, HomeEntry/HomeLayout (what the UI draws), DragSource, DropTarget
     Settings.kt            LauncherSettings (theme mode, accent, transparency, grid size, dock size and labels, app list layout, icon pack, gestures) and SettingsStore (DataStore)
+    Backup.kt              Backup: the layout and all saved settings as a JSON file (org.json)
     Widgets.kt             WidgetHost (AppWidgetHost/Manager: list, bind, configure, create views) and LauncherWidgetHostView
     SystemControls.kt      The gesture actions and the way to the accessibility settings
   ui/
@@ -76,7 +77,7 @@ app/src/main/java/dk/emilbolet/quectolaunch/
     DragDrop.kt            DragState: long-press menus, drag tracking, drop target from grid/dock bounds
     AppIcon.kt             AppIcon, EntryIcon (app or folder tile), AppMenu (shortcuts, Remove, Change icon, App info, Uninstall), MenuIcon
     IconPicker.kt          Choosing one app's icon by hand from an icon pack (in-tree overlay)
-    SettingsScreen.kt      Theme, accent color, transparency (a sub-page), icon pack, grid size, app list layout and gestures with the accessibility disclosure (in-tree overlay)
+    SettingsScreen.kt      Theme, accent color, transparency (a sub-page), icon pack, grid size, app list layout, gestures with the accessibility disclosure, backup (in-tree overlay); RestoreDialog
     AppDrawer.kt           Search field, Personal/Work switch, sectioned grid or list with sticky headers, results, letter bubble
     AlphabetScroller.kt    The A–Z strip
     Panels.kt              Transparency of the panels (app list, dock, folder, menus, search bar): colors, text color, LauncherMenu
@@ -239,11 +240,23 @@ Patterns to keep:
 - Text color, per panel: `panelNeedsLightText(panel)` mixes the wallpaper's main color (`rememberWallpaperColor`, from `WallpaperManager.getWallpaperColors`, no permission needed; darkened for the folder, which sits on a scrim) with the theme's surface color at the panel's opacity. If the mix is dark, text on that panel turns white with the home screen's shadow (`panelContentColor(panel)`, `TextStyle.onPanel(panel)`); otherwise it keeps the theme's color. A wallpaper that is half light and half dark is judged by its main color only.
 - Not done: blurring what is behind a panel (Microsoft Launcher does; Android 12+ can blur behind a window).
 
+## Backup and restore (keep this working)
+
+- Settings → Backup: "Back up layout and settings" and "Restore from a backup" (2026-11-26, for 0.3). The owner chose: a file picked with Android's own picker each time (not Android's automatic backup), layout and all settings, and a restore that replaces everything.
+- The file is JSON (`Backup.toJson`/`fromJson`, Android's `org.json`, no dependency), named `QuectoLaunch backup <date>.json`: `format` = `quectolaunch-backup`, `version` 1, `createdAt`, `pages`, `skippedWidgets`, `items` (the `home_items` rows) and `settings` (every DataStore entry with its type, so icon choices and anything added later are included without code changes). A file with another `format` or a newer `version` is refused ("That file isn't a QuectoLaunch backup").
+- Android widgets are left out (Android ties a widget ID to the installation, and binding needs its permission dialog); their count is saved and the restore toast says how many to add again. The clock and search bar are built-in widgets and are included.
+- Restore: the file is read, then `RestoreDialog` asks (with the backup's date), then `SettingsStore.importAll` (settings first, so the grid has the right size), `HomeDao.replaceAll` (new IDs, folder contents follow their folder, old Android widget IDs given back), `removeApps` for apps that aren't installed (a folder left with one app becomes that app), and the first home page.
+- The gestures switch is never restored: it keeps its current state, because turning it on must go through the accessibility disclosure.
+- The pickers are registered in `MainActivity` (a launcher in the settings screen would lose the result, because settings can close meanwhile). `LauncherViewModel.pickingFile` stops `onStop` from closing settings while the picker is open; a Home press clears it.
+- `AppInfo.key` contains the user ID (`#0` for the phone's own user), so a work-profile app restores to a profile with the same ID.
+- Tested on the emulator: backup to Downloads, restore after changing the grid (layout, folder order and settings back), a file that isn't a backup, an edited backup with a missing app, a folder whose second app was missing, and 2 skipped widgets. Not tested: restoring with Android widgets on the current layout (their IDs are given back), Danish text on screen, a real phone, moving between the GitHub and F-Droid builds.
+
 ## Ideas and leftovers
 
 Nothing here is started; ask the owner before picking one.
 
-- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, backup and restore of layout and settings, more gestures with choosable actions.
+- Suggested to the owner, not agreed: notification dots (needs notification access, with a disclosure like the gestures), hidden apps, a recent/frequent apps row in the drawer, contacts/calculator/settings results in search, renaming a single app, icon size and label on/off, more gestures with choosable actions.
+- Backup: keeping Android widgets (would need re-binding each one, with Android's permission dialog per widget), an automatic backup now and then.
 - Clock widget: a choice of styles. Search widget: a narrow icon-only form.
 - Widgets: left/top resize handles, respecting a widget's own minimum and maximum size, dragging a widget straight out of the picker, widgets in the dock.
 - Not tested systematically on a real phone, in Danish, with a work profile, or with a real Play Store icon pack.
