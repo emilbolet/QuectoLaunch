@@ -321,7 +321,15 @@ fun HomeScreen(
                             Row(Modifier.weight(1f)) {
                                 repeat(columns) { column ->
                                     val position = cellPosition(row, column)
-                                    DropCell(dragState, HomeItem.HOME, position, Modifier.weight(1f), page) {
+                                    DropCell(
+                                        dragState = dragState,
+                                        container = HomeItem.HOME,
+                                        position = position,
+                                        entry = entries[position],
+                                        modifier = Modifier.weight(1f),
+                                        page = page,
+                                        ghost = { DropGhost(dragState, repository, iconSize, showLabel = true) },
+                                    ) {
                                         Cell(entries[position], showLabel = true, iconSize = iconSize)
                                     }
                                 }
@@ -391,6 +399,7 @@ fun HomeScreen(
             slots = dockSlots,
             labels = dockLabels,
             dragState = dragState,
+            ghost = { DropGhost(dragState, repository, dockIconSize, showLabel = dockLabels) },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .systemBarsPadding()
@@ -469,8 +478,12 @@ internal fun DropCell(
     dragState: DragState,
     container: Long,
     position: Int,
+    /** What the cell holds, if anything. */
+    entry: HomeEntry?,
     modifier: Modifier = Modifier,
     page: Int = 0,
+    /** A see-through copy of the dragged icon, shown where it will land on an empty cell. */
+    ghost: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val target = dragState.target
@@ -484,16 +497,23 @@ internal fun DropCell(
             val column = position % CELL_STRIDE - target.position % CELL_STRIDE
             row in 0 until widget.spanY && column in 0 until widget.spanX
         }
+    // The cell an icon was picked up from counts as empty: it is hidden while dragged
+    val dragged = (dragState.source as? DragSource.Placed)?.entry?.id
+    val empty = entry == null || entry.id == dragged
+    // An icon over an empty cell shows its own shape; over an app or folder (which makes
+    // or fills a folder), and for widgets, the whole cell lights up
+    val showGhost = hovered && widget == null && empty
     Box(
         modifier
             .fillMaxHeight()
             .padding(2.dp)
             .background(
-                if (hovered) Color.White.copy(alpha = 0.3f) else Color.Transparent,
+                if (hovered && !showGhost) Color.White.copy(alpha = 0.3f) else Color.Transparent,
                 RoundedCornerShape(20.dp),
             ),
         contentAlignment = Alignment.Center,
     ) {
+        if (showGhost) ghost()
         content()
     }
 }

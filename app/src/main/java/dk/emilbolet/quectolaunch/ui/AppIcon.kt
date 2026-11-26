@@ -63,7 +63,7 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
         is FolderEntry -> Column(
             modifier
                 .size(size)
-                .background(Color.White.copy(alpha = 0.35f), RoundedCornerShape(size * 0.28f)),
+                .background(Color.White.copy(alpha = 0.35f), folderTileShape(size)),
             // Small icons with a gap between them and a wider margin around them
             verticalArrangement = Arrangement.spacedBy(size * FOLDER_GAP, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -85,6 +85,9 @@ fun EntryIcon(entry: HomeEntry, repository: AppRepository, size: Dp, modifier: M
         )
     }
 }
+
+/** The rounded square of a folder tile. */
+fun folderTileShape(size: Dp) = RoundedCornerShape(size * 0.28f)
 
 /** A folder tile's small icons and the gap between them, as parts of the tile's size. */
 private const val FOLDER_ICON = 0.30f

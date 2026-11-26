@@ -94,6 +94,8 @@ fun Dock(
     /** Whether the cells show app names, which makes the rows taller. */
     labels: Boolean,
     dragState: DragState,
+    /** See [DropCell]. */
+    ghost: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     cell: @Composable (HomeEntry?) -> Unit,
 ) {
@@ -156,7 +158,14 @@ fun Dock(
             ) {
                 repeat(slots) { slot ->
                     val position = cellPosition(row, slot)
-                    DropCell(dragState, HomeItem.DOCK, position, Modifier.weight(1f)) {
+                    DropCell(
+                        dragState = dragState,
+                        container = HomeItem.DOCK,
+                        position = position,
+                        entry = entries[position],
+                        modifier = Modifier.weight(1f),
+                        ghost = ghost,
+                    ) {
                         cell(entries[position])
                     }
                 }

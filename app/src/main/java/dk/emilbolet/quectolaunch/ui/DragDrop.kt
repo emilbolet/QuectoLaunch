@@ -1,7 +1,14 @@
 package dk.emilbolet.quectolaunch.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -9,19 +16,27 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import dk.emilbolet.quectolaunch.data.AppRepository
 import dk.emilbolet.quectolaunch.data.DOCK_ROWS
 import dk.emilbolet.quectolaunch.data.DragSource
 import dk.emilbolet.quectolaunch.data.DropTarget
+import dk.emilbolet.quectolaunch.data.FolderEntry
 import dk.emilbolet.quectolaunch.data.HomeItem
 import dk.emilbolet.quectolaunch.data.WidgetEntry
 import dk.emilbolet.quectolaunch.data.cellPosition
@@ -191,3 +206,48 @@ fun DragOverlay(state: DragState, repository: AppRepository) {
         }
     }
 }
+
+/**
+ * Where a dragged icon will land: a see-through white copy of its shape (round, a folder's
+ * rounded square, or whatever an icon pack draws), at the size and place of the icon in
+ * the cell. A cell with a label keeps room for it, so the copy sits where the icon will.
+ */
+@Composable
+fun DropGhost(state: DragState, repository: AppRepository, iconSize: Dp, showLabel: Boolean) {
+    // Same padding and label spacing as EntryCell, so the copy lines up with the real icon
+    Column(Modifier.padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                // Drawn on its own layer, so the white only covers the icon's own pixels
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                    alpha = GHOST_ALPHA
+                }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(Color.White, blendMode = BlendMode.SrcIn)
+                }
+        ) {
+            when (val source = state.source) {
+                is DragSource.FromDrawer -> AppIcon(source.app, repository, iconSize)
+                // A folder tile is see-through, so its copy is drawn as a plain tile instead
+                is DragSource.Placed -> if (source.entry is FolderEntry) {
+                    Spacer(Modifier.size(iconSize).background(Color.White, folderTileShape(iconSize)))
+                } else {
+                    EntryIcon(source.entry, repository, iconSize)
+                }
+                null -> Unit
+            }
+        }
+        if (showLabel) {
+            Text(
+                text = " ",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+private const val GHOST_ALPHA = 0.45f
